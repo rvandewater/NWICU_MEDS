@@ -229,6 +229,7 @@ def main(cfg: DictConfig):
         exit(0)
 
     all_fps = list(input_dir.rglob("*/*.*"))
+    all_fps += list(input_dir.rglob("*.*"))
 
     dfs_to_load = {}
     seen_fps = {}
@@ -262,8 +263,7 @@ def main(cfg: DictConfig):
             logger.info(
                 f"No function needed for {pfx}: " f"Symlinking {str(fp.resolve())} to {str(out_fp.resolve())}"
             )
-            relative_in_fp = fp.resolve().relative_to(out_fp.resolve().parent)
-            out_fp.symlink_to(relative_in_fp)
+            out_fp.symlink_to(fp)
             continue
         elif pfx in FUNCTIONS:
             out_fp = MEDS_input_dir / f"{pfx}.parquet"

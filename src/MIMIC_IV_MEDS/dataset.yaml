@@ -5,7 +5,7 @@ dataset_description: ???
 
 dataset_download_username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
 
-metadata_url_base: https://raw.githubusercontent.com/MIT-LCP/mimic-code/${dataset_metadata_version}/mimic-iv/concepts/concept_map/
+metadata_url_base: https://raw.githubusercontent.com/MIT-LCP/mimic-code/${dataset_metadata_version}/mimic-iv/concepts/concept_map
 
 urls:
   dataset:
