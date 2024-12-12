@@ -262,7 +262,7 @@ def main(cfg: DictConfig):
             logger.info(
                 f"No function needed for {pfx}: " f"Symlinking {str(fp.resolve())} to {str(out_fp.resolve())}"
             )
-            relative_in_fp = fp.relative_to(out_fp.resolve().parent, walk_up=True)
+            relative_in_fp = fp.resolve().relative_to(out_fp.resolve().parent)
             out_fp.symlink_to(relative_in_fp)
             continue
         elif pfx in FUNCTIONS:
