@@ -16,6 +16,8 @@ This pipeline extracts the MIMIC-IV dataset (from physionet) into the MEDS forma
 
 ```bash
 pip install MIMIC_IV_MEDS
+export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
+export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
 MEDS_extract-MIMIC_IV root_output_dir=$ROOT_OUTPUT_DIR
 ```
 
@@ -30,6 +32,8 @@ When you run this, the program will:
 You can also specify the target directories more directly, with
 
 ```bash
+export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
+export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
 MEDS_extract-MIMIC_IV raw_input_dir=$RAW_INPUT_DIR pre_MEDS_dir=$PRE_MEDS_DIR MEDS_cohort_dir=$MEDS_COHORT_DIR
 ```
 

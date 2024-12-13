@@ -46,7 +46,10 @@ def download_data(
         ValueError: Failed to download data from http://example.com/dataset
         >>> cfg = DictConfig({"urls": {"dataset": [{"url": "http://example.com/data", "username": "foo"}]}})
         >>> download_data(Path("data_out"), cfg, runner_fn=fake_shell_succeed)
-        wget -r -N -c -np -nH --directory-prefix data_out --user foo --ask-password http://example.com/data
+        wget -r -N -c -np -nH --directory-prefix data_out --user foo http://example.com/data
+        >>> cfg = DictConfig({"urls": {"dataset": [{"url": "http://example.com/data", "password": "bar"}]}})
+        >>> download_data(Path("data_out"), cfg, runner_fn=fake_shell_succeed)
+        wget -r -N -c -np -nH --directory-prefix data_out --password bar http://example.com/data
     """
 
     if do_demo:
@@ -59,9 +62,11 @@ def download_data(
     for url in urls:
         if isinstance(url, (dict, DictConfig)):
             username = url.get("username", None)
+            password = url.get("password", None)
             url = url.url
         else:
             username = None
+            password = None
 
         command_parts = ["wget -r -N -c -np -nH --directory-prefix", f"{output_dir}"]
 
@@ -70,7 +75,9 @@ def download_data(
             command_parts.append(f"--cut-dirs {len(url_parts) - 1}")
 
         if username:
-            command_parts.append(f"--user {username} --ask-password")
+            command_parts.append(f"--user {username}")
+        if password:
+            command_parts.append(f"--password {password}")
         command_parts.append(url)
 
         try:
