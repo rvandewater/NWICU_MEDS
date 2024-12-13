@@ -16,7 +16,21 @@ This pipeline extracts the MIMIC-IV dataset (from physionet) into the MEDS forma
 
 ```bash
 pip install MIMIC_IV_MEDS
-MEDS_extract-MIMIC_IV raw_input_dir=$RAW_INPUT pre_MEDS_dir=$PRE_MEDS MEDS_cohort_dir=$COHORT
+MEDS_extract-MIMIC_IV root_output_dir=$ROOT_OUTPUT_DIR
+```
+
+When you run this, the program will:
+
+1. Download the needed raw MIMIC files for the currently supported version into
+    `$ROOT_OUTPUT_DIR/raw_input`.
+2. Perform initial, pre-MEDS processing on the raw MIMIC files, saving the results in
+    `$ROOT_OUTPUT_DIR/pre_MEDS`.
+3. Construct the final MEDS cohort, and save it to `$ROOT_OUTPUT_DIR/MEDS_cohort`.
+
+You can also specify the target directories more directly, with
+
+```bash
+MEDS_extract-MIMIC_IV raw_input_dir=$RAW_INPUT_DIR pre_MEDS_dir=$PRE_MEDS_DIR MEDS_cohort_dir=$MEDS_COHORT_DIR
 ```
 
 ## Examples and More Info:
@@ -24,7 +38,7 @@ MEDS_extract-MIMIC_IV raw_input_dir=$RAW_INPUT pre_MEDS_dir=$PRE_MEDS MEDS_cohor
 You can run `MEDS_extract-MIMIC_IV --help` for more information on the arguments and options. You can also run
 
 ```bash
-MEDS_extract-MIMIC_IV raw_input_dir=$RAW_INPUT pre_MEDS_dir=$PRE_MEDS MEDS_cohort_dir=$COHORT do_demo=True
+MEDS_extract-MIMIC_IV root_output_dir=$ROOT_OUTPUT_DIR do_demo=True
 ```
 
 to run the entire pipeline over the publicly available, fully open MIMIC-IV demo dataset.
