@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -8,10 +9,14 @@ from omegaconf import DictConfig
 
 from .commands import run_command
 
+logger = logging.getLogger(__name__)
+
 
 def download_file(url, output_dir, session):
     """Download a single file."""
     response = session.get(url, stream=True)
+    if response.status_code != 200:
+        logger.error(f"Failed to download {url} in streaming download_file get: {response.status_code}")
     response.raise_for_status()
 
     parsed_url = urlparse(url)
@@ -31,6 +36,9 @@ def crawl_and_download(base_url, output_dir, session):
         download_file(base_url, output_dir, session)
 
     response = session.get(base_url)
+
+    if response.status_code != 200:
+        logger.error(f"Failed to download {base_url} in initial get: {response.status_code}")
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -110,7 +118,14 @@ def download_data(
         if isinstance(url, (dict, DictConfig)):
             username = url.get("username", None)
             password = url.get("password", None)
+            logger.info(f"Authenticating for {username}")
             session.auth = (username, password)
+            session.headers.update(
+                {
+                    "User-Agent": "Wget/1.21.1 (linux-gnu)",
+                }
+            )
+
             url = url.url
 
         try:
