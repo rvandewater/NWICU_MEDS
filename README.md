@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/mmcdermott/MIMIC_IV_MEDS/graph/badge.svg?token=E7H6HKZV3O)](https://codecov.io/gh/mmcdermott/MIMIC_IV_MEDS)
 [![tests](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/tests.yaml/badge.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/tests.yml)
 [![code-quality](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/code-quality-main.yaml)
-![python](https://img.shields.io/badge/-Python_3.12-blue?logo=python&logoColor=white)
+![python](https://img.shields.io/badge/-Python_3.11-blue?logo=python&logoColor=white)
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/mmcdermott/MIMIC_IV_MEDS#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/pulls)
 [![contributors](https://img.shields.io/github/contributors/mmcdermott/MIMIC_IV_MEDS.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/graphs/contributors)
