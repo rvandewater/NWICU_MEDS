@@ -208,9 +208,9 @@ ICD_DFS_TO_FIX = [
 
 @hydra.main(version_base=None, config_path="configs", config_name="pre_MEDS")
 def main(cfg: DictConfig):
-    """Performs pre-MEDS data wrangling for MIMIC-IV.
+    """Performs pre-MEDS data wrangling for NWICU.
 
-    Inputs are the raw MIMIC files, read from the `input_dir` config parameter. Output files are either
+    Inputs are the raw nwicu files, read from the `input_dir` config parameter. Output files are either
     symlinked (if they are not modified) or written in processed form to the `MEDS_input_dir` config
     parameter. Hydra is used to manage configuration parameters and logging.
     """
