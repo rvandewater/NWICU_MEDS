@@ -1,6 +1,6 @@
-# MIMIC-IV MEDS Extraction ETL
+# NWICU MEDS Extraction ETL
 
-[![PyPI - Version](https://img.shields.io/pypi/v/MIMIC-IV-MEDS)](https://pypi.org/project/MIMIC-IV-MEDS/)
+[![PyPI - Version](https://img.shields.io/pypi/v/NWICU-MEDS)](https://pypi.org/project/NWICU-MEDS/)
 [![Documentation Status](https://readthedocs.org/projects/meds-transforms/badge/?version=latest)](https://meds-transforms.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/rvandewater/NWICU_MEDS/graph/badge.svg?token=E7H6HKZV3O)](https://codecov.io/gh/rvandewater/NWICU_MEDS)
 [![tests](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/tests.yaml/badge.svg)](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/tests.yml)
@@ -10,7 +10,7 @@
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/NWICU_MEDS/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/NWICU_MEDS.svg)](https://github.com/rvandewater/NWICU_MEDS/graphs/contributors)
 
-This pipeline extracts the MIMIC-IV dataset (from physionet) into the MEDS format.
+This pipeline extracts the NWICU dataset (from physionet) into the MEDS format.
 
 ## Usage:
 
@@ -45,4 +45,4 @@ You can run `MEDS_extract-NWICU --help` for more information on the arguments an
 MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR do_demo=True
 ```
 
-to run the entire pipeline over the publicly available, fully open MIMIC-IV demo dataset.
+to run the entire pipeline over the publicly available, fully open NWICU demo dataset.
