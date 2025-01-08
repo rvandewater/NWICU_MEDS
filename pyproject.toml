@@ -34,8 +34,8 @@ docs = [
 ]
 
 [project.scripts]
-MEDS_extract-MIMIC_IV = "MIMIC_IV_MEDS.__main__:main"
+MEDS_extract-NWICU = "NWICU_MEDS.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/mmcdermott/MIMIC_IV_MEDS"
-Issues = "https://github.com/mmcdermott/MIMIC_IV_MEDS/issues"
+Homepage = "https://github.com/rvandewater/NWICU_MEDS"
+Issues = "https://github.com/rvandewater/NWICU_MEDS/issues"

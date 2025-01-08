@@ -3,7 +3,7 @@ from importlib.resources import files
 
 from omegaconf import OmegaConf
 
-__package_name__ = "MIMIC_IV_MEDS"
+__package_name__ = "NWICU_MEDS"
 try:
     __version__ = version(__package_name__)
 except PackageNotFoundError:  # pragma: no cover

@@ -13,7 +13,7 @@ def test_e2e():
         do_download = True
 
         command_parts = [
-            "MEDS_extract-MIMIC_IV",
+            "MEDS_extract-NWICU",
             f"root_output_dir={str(root.resolve())}",
             f"do_download={do_download}",
             f"do_overwrite={do_overwrite}",
