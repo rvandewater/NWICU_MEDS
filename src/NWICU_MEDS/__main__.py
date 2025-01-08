@@ -41,12 +41,12 @@ def main(cfg: DictConfig):
         command_parts = [
             "python",
             str(PRE_MEDS_PY),
-            f"input_dir={raw_input_dir}",
+            f"input_dir={raw_input_dir}/data",
             f"output_dir={pre_MEDS_dir}",
         ]
         run_command(command_parts, cfg)
     else:
-        pre_MEDS_dir = raw_input_dir
+        pre_MEDS_dir = f"{raw_input_dir}/data"
 
     # Step 2: MEDS Cohort Creation
     # First we need to set some environment variables

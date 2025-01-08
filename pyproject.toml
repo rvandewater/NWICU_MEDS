@@ -3,12 +3,13 @@ requires = ["setuptools>=64", "setuptools-scm>=8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "MIMIC-IV-MEDS"
+name = "NWICU-MEDS"
 dynamic = ["version"]
 authors = [
-  { name="Matthew McDermott", email="mattmcdermott8@gmail.com" },
+  { name="Robin van de Water", email="robin.vandewater@hpi.de"},
+    { name="Matthew McDermott", email="mattmcdermott8@gmail.com" },
 ]
-description = "An ETL pipeline to extract MIMIC-IV data into the MEDS format."
+description = "An ETL pipeline to extract NWICU data into the MEDS format."
 readme = "README.md"
 requires-python = ">=3.11"
 classifiers = [

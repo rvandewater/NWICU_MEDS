@@ -1,5 +1,5 @@
-dataset_name: MIMIC-IV
-raw_dataset_version: 3.1
+dataset_name: NWICU
+raw_dataset_version: 0.1.0
 dataset_metadata_version: v2.4.0
 dataset_description: ???
 
@@ -7,11 +7,11 @@ metadata_url_base: https://raw.githubusercontent.com/MIT-LCP/mimic-code/${datase
 
 urls:
   dataset:
-    - url: https://physionet.org/files/mimiciv/${raw_dataset_version}/
+    - url: https://physionet.org/files/nwicu-northwestern-icu/${raw_dataset_version}/
       username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
       password: ${oc.env:DATASET_DOWNLOAD_PASSWORD}
-  demo:
-    - https://physionet.org/files/mimic-iv-demo/2.2/
+#  demo:
+#    - https://physionet.org/files/mimic-iv-demo/2.2/
   common:
     - ${metadata_url_base}/d_labitems_to_loinc.csv
     - ${metadata_url_base}/inputevents_to_rxnorm.csv

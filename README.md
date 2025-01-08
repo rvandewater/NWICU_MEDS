@@ -10,7 +10,7 @@
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/NWICU_MEDS/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/NWICU_MEDS.svg)](https://github.com/rvandewater/NWICU_MEDS/graphs/contributors)
 
-This pipeline extracts the NWICU dataset (from physionet) into the MEDS format.
+This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/content/nwicu-northwestern-icu/0.1.0/) into the MEDS format.
 
 ## Usage:
 
@@ -23,9 +23,9 @@ MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
 
 When you run this, the program will:
 
-1. Download the needed raw MIMIC files for the currently supported version into
+1. Download the needed raw NWICU files for the currently supported version into
     `$ROOT_OUTPUT_DIR/raw_input`.
-2. Perform initial, pre-MEDS processing on the raw MIMIC files, saving the results in
+2. Perform initial, pre-MEDS processing on the raw NWICU files, saving the results in
     `$ROOT_OUTPUT_DIR/pre_MEDS`.
 3. Construct the final MEDS cohort, and save it to `$ROOT_OUTPUT_DIR/MEDS_cohort`.
 

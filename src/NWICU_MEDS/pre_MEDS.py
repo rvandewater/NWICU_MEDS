@@ -195,14 +195,14 @@ def fix_static_data(raw_static_df: pl.LazyFrame, death_times_df: pl.LazyFrame) -
 
 
 FUNCTIONS = {
-    "hosp/diagnoses_icd": (add_discharge_time_by_hadm_id, ("hosp/admissions", ["hadm_id", "dischtime"])),
-    "hosp/drgcodes": (add_discharge_time_by_hadm_id, ("hosp/admissions", ["hadm_id", "dischtime"])),
-    "hosp/patients": (fix_static_data, ("hosp/admissions", ["subject_id", "deathtime"])),
+    "nw_hosp/diagnoses_icd": (add_discharge_time_by_hadm_id, ("nw_hosp/admissions", ["hadm_id", "dischtime"])),
+    "nw_hosp/drgcodes": (add_discharge_time_by_hadm_id, ("nw_hosp/admissions", ["hadm_id", "dischtime"])),
+    "nw_hosp/patients": (fix_static_data, ("nw_hosp/admissions", ["subject_id", "deathtime"])),
 }
 
 ICD_DFS_TO_FIX = [
-    ("hosp/d_icd_diagnoses", add_icd_diagnosis_dot),
-    ("hosp/d_icd_procedures", add_icd_procedure_dot),
+    ("nw_hosp/d_icd_diagnoses", add_icd_diagnosis_dot),
+    # ("hosp/d_icd_procedures", add_icd_procedure_dot),
 ]
 
 
@@ -319,6 +319,7 @@ def main(cfg: DictConfig):
             logger.info(f"    Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - fp_st}")
 
     for pfx, fn in ICD_DFS_TO_FIX:
+        logger.info(f"Processing {get_supported_fp(input_dir, pfx)}...")
         fp, read_fn = get_supported_fp(input_dir, pfx)
         out_fp = MEDS_input_dir / f"{pfx}.parquet"
 

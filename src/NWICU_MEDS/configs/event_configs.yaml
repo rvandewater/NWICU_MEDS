@@ -1,5 +1,5 @@
 subject_id_col: subject_id
-hosp/admissions:
+nw_hosp/admissions:
   ed_registration:
     code: ED_REGISTRATION
     time: col(edregtime)
@@ -29,7 +29,7 @@ hosp/admissions:
     hadm_id: hadm_id
   # We omit the death event here as it is joined to the data in the subjects table in the pre-MEDS step.
 
-hosp/diagnoses_icd:
+nw_hosp/diagnoses_icd:
   diagnosis:
     code:
       - DIAGNOSIS
@@ -40,24 +40,24 @@ hosp/diagnoses_icd:
     time: col(hadm_discharge_time)
     time_format: "%Y-%m-%d %H:%M:%S"
     _metadata:
-      hosp/d_icd_diagnoses:
+      nw_hosp/d_icd_diagnoses:
         description: "long_title"
         parent_codes: "ICD{icd_version}CM/{norm_icd_code}" # Single strings are templates of columns.
 
-hosp/drgcodes:
-  drg:
-    code:
-      - DRG
-      - col(drg_type)
-      - col(drg_code)
-      - col(description)
-    hadm_id: hadm_id
-    time: col(hadm_discharge_time)
-    time_format: "%Y-%m-%d %H:%M:%S"
-    drg_severity: drg_severity
-    drg_mortality: drg_mortality
+#nw_hosp/drgcodes:
+#  drg:
+#    code:
+#      - DRG
+#      - col(drg_type)
+#      - col(drg_code)
+#      - col(description)
+#    hadm_id: hadm_id
+#    time: col(hadm_discharge_time)
+#    time_format: "%Y-%m-%d %H:%M:%S"
+#    drg_severity: drg_severity
+#    drg_mortality: drg_mortality
 
-hosp/emar:
+nw_hosp/emar:
   medication:
     code:
       - MEDICATION
@@ -69,21 +69,21 @@ hosp/emar:
     emar_id: emar_id
     emar_seq: emar_seq
 
-hosp/hcpcsevents:
-  hcpcs:
-    code:
-      - HCPCS
-      - col(short_description)
-    hadm_id: hadm_id
-    time: col(chartdate)
-    time_format: "%Y-%m-%d"
-    _metadata:
-      # These are not all CPT codes, unfortunately
-      hosp/d_hcpcs:
-        description: "long_description"
-        possibly_cpt_code: "code"
+#nw_hosp/hcpcsevents:
+#  hcpcs:
+#    code:
+#      - HCPCS
+#      - col(short_description)
+#    hadm_id: hadm_id
+#    time: col(chartdate)
+#    time_format: "%Y-%m-%d"
+#    _metadata:
+#      # These are not all CPT codes, unfortunately
+#      nw_hosp/d_hcpcs:
+#        description: "long_description"
+#        possibly_cpt_code: "code"
 
-hosp/labevents:
+nw_hosp/labevents:
   lab:
     code:
       - LAB
@@ -102,14 +102,14 @@ hosp/labevents:
         parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
         valueuom: "valueuom"
 
-hosp/omr:
-  omr:
-    code: col(result_name)
-    text_value: col(result_value)
-    time: col(chartdate)
-    time_format: "%Y-%m-%d"
+#nw_hosp/omr:
+#  omr:
+#    code: col(result_name)
+#    text_value: col(result_value)
+#    time: col(chartdate)
+#    time_format: "%Y-%m-%d"
 
-hosp/patients:
+nw_hosp/patients:
   gender:
     code:
       - GENDER
@@ -126,59 +126,59 @@ hosp/patients:
       - "%Y-%m-%d %H:%M:%S"
       - "%Y-%m-%d"
 
-hosp/pharmacy:
-  medication_start:
-    code:
-      - MEDICATION
-      - START
-      - col(medication)
-    time: col(starttime)
-    route: route
-    frequency: frequency
-    doses_per_24_hrs: doses_per_24_hrs
-    poe_id: poe_id
-    time_format:
-      - "%Y-%m-%d %H:%M:%S"
-      - "%Y-%m-%d"
-  medication_stop:
-    code:
-      - MEDICATION
-      - STOP
-      - col(medication)
-    time: col(stoptime)
-    poe_id: poe_id
-    time_format:
-      - "%Y-%m-%d %H:%M:%S"
-      - "%Y-%m-%d"
+#nw_hosp/pharmacy:
+#  medication_start:
+#    code:
+#      - MEDICATION
+#      - START
+#      - col(medication)
+#    time: col(starttime)
+#    route: route
+#    frequency: frequency
+#    doses_per_24_hrs: doses_per_24_hrs
+#    poe_id: poe_id
+#    time_format:
+#      - "%Y-%m-%d %H:%M:%S"
+#      - "%Y-%m-%d"
+#  medication_stop:
+#    code:
+#      - MEDICATION
+#      - STOP
+#      - col(medication)
+#    time: col(stoptime)
+#    poe_id: poe_id
+#    time_format:
+#      - "%Y-%m-%d %H:%M:%S"
+#      - "%Y-%m-%d"
+#
+#nw_hosp/procedures_icd:
+#  procedure:
+#    code:
+#      - PROCEDURE
+#      - ICD
+#      - col(icd_version)
+#      - col(icd_code)
+#    hadm_id: hadm_id
+#    time: col(chartdate)
+#    time_format: "%Y-%m-%d"
+#    _metadata:
+#      nw_hosp/d_icd_procedures:
+#        description: "long_title"
+#        parent_codes: # List of objects are string labels mapping to filters to be evaluated.
+#          - "ICD{icd_version}Proc/{norm_icd_code}": { icd_version: "9" }
+#          - "ICD{icd_version}PCS/{norm_icd_code}": { icd_version: "10" }
+#
+#nw_hosp/transfers:
+#  transfer:
+#    code:
+#      - TRANSFER_TO
+#      - col(eventtype)
+#      - col(careunit)
+#    time: col(intime)
+#    time_format: "%Y-%m-%d %H:%M:%S"
+#    hadm_id: hadm_id
 
-hosp/procedures_icd:
-  procedure:
-    code:
-      - PROCEDURE
-      - ICD
-      - col(icd_version)
-      - col(icd_code)
-    hadm_id: hadm_id
-    time: col(chartdate)
-    time_format: "%Y-%m-%d"
-    _metadata:
-      hosp/d_icd_procedures:
-        description: "long_title"
-        parent_codes: # List of objects are string labels mapping to filters to be evaluated.
-          - "ICD{icd_version}Proc/{norm_icd_code}": { icd_version: "9" }
-          - "ICD{icd_version}PCS/{norm_icd_code}": { icd_version: "10" }
-
-hosp/transfers:
-  transfer:
-    code:
-      - TRANSFER_TO
-      - col(eventtype)
-      - col(careunit)
-    time: col(intime)
-    time_format: "%Y-%m-%d %H:%M:%S"
-    hadm_id: hadm_id
-
-icu/icustays:
+nw_icu/icustays:
   icu_admission:
     code:
       - ICU_ADMISSION
@@ -196,7 +196,7 @@ icu/icustays:
     hadm_id: hadm_id
     icustay_id: stay_id
 
-icu/chartevents:
+nw_icu/chartevents:
   event:
     code:
       - LAB
@@ -221,7 +221,7 @@ icu/chartevents:
         parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
         valueuom: "valueuom"
 
-icu/procedureevents:
+nw_icu/procedureevents:
   start:
     code:
       - PROCEDURE
@@ -259,66 +259,66 @@ icu/procedureevents:
         itemid: "itemid (omop_source_code)"
         parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
 
-icu/inputevents:
-  input_start:
-    code:
-      - INFUSION_START
-      - col(itemid)
-    time: col(starttime)
-    time_format: "%Y-%m-%d %H:%M:%S"
-    hadm_id: hadm_id
-    icustay_id: stay_id
-    order_id: orderid
-    link_order_id: linkorderid
-    numeric_value: rate
-    unit: rateuom
-    ordercategorydescription: ordercategorydescription
-    _metadata:
-      inputevents_to_rxnorm:
-        description: ["omop_concept_name", "label"] # List of strings are columns to be collated
-        itemid: "itemid (omop_source_code)"
-        parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
-  input_end:
-    code:
-      - INFUSION_END
-      - col(itemid)
-    time: col(endtime)
-    time_format: "%Y-%m-%d %H:%M:%S"
-    hadm_id: hadm_id
-    icustay_id: stay_id
-    order_id: orderid
-    link_order_id: linkorderid
-    numeric_value: amount
-    ordercategorydescription: ordercategorydescription
-    statusdescription: statusdescription
-    unit: amountuom
-    _metadata:
-      inputevents_to_rxnorm:
-        description: ["omop_concept_name", "label"] # List of strings are columns to be collated
-        itemid: "itemid (omop_source_code)"
-        parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
-  subject_weight:
-    code:
-      - SUBJECT_WEIGHT_AT_INFUSION
-      - KG
-    time: col(starttime)
-    time_format: "%Y-%m-%d %H:%M:%S"
-    numeric_value: patientweight
-
-icu/outputevents:
-  output:
-    code:
-      - SUBJECT_FLUID_OUTPUT
-      - col(itemid)
-      - col(valueuom)
-    time: col(charttime)
-    time_format: "%Y-%m-%d %H:%M:%S"
-    hadm_id: hadm_id
-    icustay_id: stay_id
-    numeric_value: value
-    _metadata:
-      outputevents_to_loinc:
-        description: ["omop_concept_name", "label"] # List of strings are columns to be collated
-        itemid: "itemid (omop_source_code)"
-        valueuom: "unitname"
-        parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
+#nw_icu/inputevents:
+#  input_start:
+#    code:
+#      - INFUSION_START
+#      - col(itemid)
+#    time: col(starttime)
+#    time_format: "%Y-%m-%d %H:%M:%S"
+#    hadm_id: hadm_id
+#    icustay_id: stay_id
+#    order_id: orderid
+#    link_order_id: linkorderid
+#    numeric_value: rate
+#    unit: rateuom
+#    ordercategorydescription: ordercategorydescription
+#    _metadata:
+#      inputevents_to_rxnorm:
+#        description: ["omop_concept_name", "label"] # List of strings are columns to be collated
+#        itemid: "itemid (omop_source_code)"
+#        parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
+#  input_end:
+#    code:
+#      - INFUSION_END
+#      - col(itemid)
+#    time: col(endtime)
+#    time_format: "%Y-%m-%d %H:%M:%S"
+#    hadm_id: hadm_id
+#    icustay_id: stay_id
+#    order_id: orderid
+#    link_order_id: linkorderid
+#    numeric_value: amount
+#    ordercategorydescription: ordercategorydescription
+#    statusdescription: statusdescription
+#    unit: amountuom
+#    _metadata:
+#      inputevents_to_rxnorm:
+#        description: ["omop_concept_name", "label"] # List of strings are columns to be collated
+#        itemid: "itemid (omop_source_code)"
+#        parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
+#  subject_weight:
+#    code:
+#      - SUBJECT_WEIGHT_AT_INFUSION
+#      - KG
+#    time: col(starttime)
+#    time_format: "%Y-%m-%d %H:%M:%S"
+#    numeric_value: patientweight
+#
+#nw_icu/outputevents:
+#  output:
+#    code:
+#      - SUBJECT_FLUID_OUTPUT
+#      - col(itemid)
+#      - col(valueuom)
+#    time: col(charttime)
+#    time_format: "%Y-%m-%d %H:%M:%S"
+#    hadm_id: hadm_id
+#    icustay_id: stay_id
+#    numeric_value: value
+#    _metadata:
+#      outputevents_to_loinc:
+#        description: ["omop_concept_name", "label"] # List of strings are columns to be collated
+#        itemid: "itemid (omop_source_code)"
+#        valueuom: "unitname"
+#        parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
