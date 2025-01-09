@@ -22,6 +22,7 @@ dependencies = [
 ]
 
 [tool.setuptools_scm]
+local_scheme = "no-local-version"
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
@@ -40,3 +41,28 @@ MEDS_extract-NWICU = "NWICU_MEDS.__main__:main"
 [project.urls]
 Homepage = "https://github.com/rvandewater/NWICU_MEDS"
 Issues = "https://github.com/rvandewater/NWICU_MEDS/issues"
+
+[tool.bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR"
+commit_message = "bump version {old_version} -> {new_version}"
+tag_message = "{new_version}"
+tag_scope = "default"
+pre_commit_hook = ""
+post_commit_hook = ""
+commit = true
+tag = true
+push = true
+
+[egg_info]
+tag_build = ""
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+"README.md" = [
+    "{version}",
+    "{pep440_version}",
+]
+
