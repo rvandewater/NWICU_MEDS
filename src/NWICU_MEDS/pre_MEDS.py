@@ -195,7 +195,10 @@ def fix_static_data(raw_static_df: pl.LazyFrame, death_times_df: pl.LazyFrame) -
 
 
 FUNCTIONS = {
-    "nw_hosp/diagnoses_icd": (add_discharge_time_by_hadm_id, ("nw_hosp/admissions", ["hadm_id", "dischtime"])),
+    "nw_hosp/diagnoses_icd": (
+        add_discharge_time_by_hadm_id,
+        ("nw_hosp/admissions", ["hadm_id", "dischtime"]),
+    ),
     "nw_hosp/drgcodes": (add_discharge_time_by_hadm_id, ("nw_hosp/admissions", ["hadm_id", "dischtime"])),
     "nw_hosp/patients": (fix_static_data, ("nw_hosp/admissions", ["subject_id", "deathtime"])),
 }

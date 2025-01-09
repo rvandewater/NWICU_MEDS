@@ -58,4 +58,3 @@ push            = false
     "{version}",
     "{pep440_version}",
 ]
-

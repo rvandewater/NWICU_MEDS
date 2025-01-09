@@ -10,8 +10,8 @@ urls:
     - url: https://physionet.org/files/nwicu-northwestern-icu/${raw_dataset_version}/data/
       username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
       password: ${oc.env:DATASET_DOWNLOAD_PASSWORD}
-#  demo:
-#    - https://physionet.org/files/mimic-iv-demo/2.2/
+  #  demo:
+  #    - https://physionet.org/files/mimic-iv-demo/2.2/
   common:
     - ${metadata_url_base}/d_labitems_to_loinc.csv
     - ${metadata_url_base}/inputevents_to_rxnorm.csv

@@ -258,7 +258,6 @@ nw_icu/procedureevents:
         description: ["omop_concept_name", "label"] # List of strings are columns to be collated
         itemid: "itemid (omop_source_code)"
         parent_codes: "{omop_vocabulary_id}/{omop_concept_code}"
-
 #nw_icu/inputevents:
 #  input_start:
 #    code:
