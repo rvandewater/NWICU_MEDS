@@ -28,8 +28,10 @@ def main(cfg: DictConfig):
     # Step 0: Data downloading
     if cfg.do_download:
         if cfg.get("do_demo", False):
-            logger.info("Downloading demo data.")
-            download_data(raw_input_dir, dataset_info, do_demo=True)
+            logger.info("No public demo available for NWICU at this time.")
+            return
+            # logger.info("Downloading demo data.")
+            # download_data(raw_input_dir, dataset_info, do_demo=True)
         else:
             logger.info("Downloading data.")
             download_data(raw_input_dir, dataset_info)
