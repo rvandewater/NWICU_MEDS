@@ -1,5 +1,7 @@
 default_language_version:
-  python: python3.11
+  python: python3.12
+
+#exclude:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -40,19 +42,21 @@ repos:
 
   # python upgrading syntax to newer version
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.19.0
     hooks:
       - id: pyupgrade
         args: [--py311-plus]
 
-  # disabled due to error
   # python docstring formatting
   #  - repo: https://github.com/myint/docformatter
-  #      rev: v1.7.10
-  #      hooks:
-  #        - id: docformatter
-  #          language: python
-  #          args: [--in-place, --wrap-summaries=110, --wrap-descriptions=110]
+  #    rev: v1.7.5
+  #    hooks:
+  #      - id: docformatter
+  #        name: docformatter
+  #        entry: docformatter
+  #        language: python
+  #        args: [--in-place, --wrap-summaries=110, --wrap-descriptions=110]
+  #        files: \.py$
 
   # python check (PEP8), programming errors and code complexity
   - repo: https://github.com/PyCQA/flake8
@@ -87,7 +91,7 @@ repos:
 
   # md formatting
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.21
+    rev: 0.7.18
     hooks:
       - id: mdformat
         args: ["--number"]
@@ -113,13 +117,13 @@ repos:
 
   # jupyter notebook cell output clearing
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 0.7.1
     hooks:
       - id: nbstripout
 
   # jupyter notebook linting
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.9.1
+    rev: 1.8.7
     hooks:
       - id: nbqa-black
         args: ["--line-length=110"]
