@@ -46,3 +46,14 @@ MEDS_extract-MIMIC_IV root_output_dir=$ROOT_OUTPUT_DIR do_demo=True
 ```
 
 to run the entire pipeline over the publicly available, fully open MIMIC-IV demo dataset.
+
+## Expected runtime and compute needs
+
+This pipeline can be successfully run over the full MIMIC-IV on a 5-core machine leveraging around 165GB of
+memory in approximately 7 hours (note this time includes the time to download all of the MIMIC-IV files as
+well, and this test was run on a machine with poor network transfer speeds and without any parallelization
+applied to the transformation steps, so these speeds can likely be greatly increased). The output folder of
+data is 9.8 GB. This can be reduced significantly as well as intermediate files not necessary for the final
+MEDS dataset are retained in additional folders. See
+[this github issue](https://github.com/mmcdermott/MEDS_transforms/issues/235) for tracking on ensuring these
+directories are automatically cleaned up in the future.
