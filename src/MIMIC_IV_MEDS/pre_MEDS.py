@@ -1,17 +1,13 @@
-#!/usr/bin/env python
-
 """Performs pre-MEDS data wrangling for MIMIC-IV."""
 
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 
-import hydra
 import polars as pl
 from loguru import logger
 from MEDS_transforms.extract.utils import get_supported_fp
-from MEDS_transforms.utils import get_shard_prefix, hydra_loguru_init, write_lazyframe
-from omegaconf import DictConfig
+from MEDS_transforms.utils import get_shard_prefix, write_lazyframe
 
 
 def add_dot(code: pl.Expr, position: int) -> pl.Expr:
@@ -206,25 +202,19 @@ ICD_DFS_TO_FIX = [
 ]
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="pre_MEDS")
-def main(cfg: DictConfig):
+def main(input_dir: Path, output_dir: Path, do_overwrite: bool | None = None):
     """Performs pre-MEDS data wrangling for MIMIC-IV.
 
     Inputs are the raw MIMIC files, read from the `input_dir` config parameter. Output files are either
-    symlinked (if they are not modified) or written in processed form to the `MEDS_input_dir` config
+    symlinked (if they are not modified) or written in processed form to the `output_dir` config
     parameter. Hydra is used to manage configuration parameters and logging.
     """
 
-    hydra_loguru_init()
-
-    input_dir = Path(cfg.input_dir)
-    MEDS_input_dir = Path(cfg.output_dir)
-
-    done_fp = MEDS_input_dir / ".done"
-    if done_fp.is_file() and not cfg.do_overwrite:
+    done_fp = output_dir / ".done"
+    if done_fp.is_file() and not do_overwrite:
         logger.info(
             f"Pre-MEDS transformation already complete as {done_fp} exists and "
-            f"do_overwrite={cfg.do_overwrite}. Returning."
+            f"do_overwrite={do_overwrite}. Returning."
         )
         exit(0)
 
@@ -251,7 +241,7 @@ def main(cfg: DictConfig):
         else:
             seen_fps[str(fp.resolve())] = read_fn
 
-        out_fp = MEDS_input_dir / fp.relative_to(input_dir)
+        out_fp = output_dir / fp.relative_to(input_dir)
 
         if out_fp.is_file():
             print(f"Done with {pfx}. Continuing")
@@ -266,7 +256,7 @@ def main(cfg: DictConfig):
             out_fp.symlink_to(fp)
             continue
         elif pfx in FUNCTIONS:
-            out_fp = MEDS_input_dir / f"{pfx}.parquet"
+            out_fp = output_dir / f"{pfx}.parquet"
             if out_fp.is_file():
                 print(f"Done with {pfx}. Continuing")
                 continue
@@ -305,7 +295,7 @@ def main(cfg: DictConfig):
 
         for fp in fps:
             pfx = get_shard_prefix(input_dir, fp)
-            out_fp = MEDS_input_dir / f"{pfx}.parquet"
+            out_fp = output_dir / f"{pfx}.parquet"
 
             logger.info(f"  Processing dependent df @ {pfx}...")
             fn, _ = FUNCTIONS[pfx]
@@ -320,7 +310,7 @@ def main(cfg: DictConfig):
 
     for pfx, fn in ICD_DFS_TO_FIX:
         fp, read_fn = get_supported_fp(input_dir, pfx)
-        out_fp = MEDS_input_dir / f"{pfx}.parquet"
+        out_fp = output_dir / f"{pfx}.parquet"
 
         if out_fp.is_file():
             print(f"Done with {pfx}. Continuing")
@@ -343,9 +333,5 @@ def main(cfg: DictConfig):
         processed_df.write_parquet(out_fp, use_pyarrow=True)
         logger.info(f"  Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - st}")
 
-    logger.info(f"Done! All dataframes processed and written to {str(MEDS_input_dir.resolve())}")
+    logger.info(f"Done! All dataframes processed and written to {str(output_dir.resolve())}")
     done_fp.write_text(f"Finished at {datetime.now()}")
-
-
-if __name__ == "__main__":
-    main()
