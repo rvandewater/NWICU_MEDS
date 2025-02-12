@@ -46,3 +46,7 @@ MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
 ```
 
 to run the entire pipeline.
+
+# Citation
+we provide an ETL for the following resource:
+Moukheiber, D., Temps, W., Molgi, B., Li, Y., Lu, A., Nannapaneni, P., Chahin, A., Hao, S., Torres Fabregas, F., Celi, L. A., Wong, A., Lloyd, M., Borrat Frigola, X., Lee, H., Schneider, D., Pollard, T., Luo, Y., Kho, A., & Mark, R. (2024). Northwestern ICU (NWICU) database (version 0.1.0). PhysioNet. https://doi.org/10.13026/s84w-1829.
