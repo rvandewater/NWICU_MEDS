@@ -9,6 +9,7 @@
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/NWICU_MEDS#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/NWICU_MEDS/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/NWICU_MEDS.svg)](https://github.com/rvandewater/NWICU_MEDS/graphs/contributors)
+[![DOI](https://zenodo.org/badge/913786544.svg)](https://doi.org/10.5281/zenodo.14892134)
 
 This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/content/nwicu-northwestern-icu/0.1.0/) into the MEDS format.
 
@@ -48,5 +49,6 @@ MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
 to run the entire pipeline.
 
 # Citation
+
 we provide an ETL for the following resource:
 Moukheiber, D., Temps, W., Molgi, B., Li, Y., Lu, A., Nannapaneni, P., Chahin, A., Hao, S., Torres Fabregas, F., Celi, L. A., Wong, A., Lloyd, M., Borrat Frigola, X., Lee, H., Schneider, D., Pollard, T., Luo, Y., Kho, A., & Mark, R. (2024). Northwestern ICU (NWICU) database (version 0.1.0). PhysioNet. https://doi.org/10.13026/s84w-1829.
