@@ -2,13 +2,13 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/MIMIC-IV-MEDS)](https://pypi.org/project/MIMIC-IV-MEDS/)
 [![Documentation Status](https://readthedocs.org/projects/meds-transforms/badge/?version=latest)](https://meds-transforms.readthedocs.io/en/latest/?badge=latest)
-[![codecov](https://codecov.io/gh/mmcdermott/MIMIC_IV_MEDS/graph/badge.svg?token=E7H6HKZV3O)](https://codecov.io/gh/mmcdermott/MIMIC_IV_MEDS)
-[![tests](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/tests.yaml/badge.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/tests.yml)
-[![code-quality](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/actions/workflows/code-quality-main.yaml)
+[![codecov](https://codecov.io/gh/Medical-Event-Data-Standard/MIMIC_IV_MEDS/graph/badge.svg?token=E7H6HKZV3O)](https://codecov.io/gh/Medical-Event-Data-Standard/MIMIC_IV_MEDS)
+[![tests](https://github.com/Medical-Event-Data-Standard/MIMIC_IV_MEDS/actions/workflows/tests.yaml/badge.svg)](https://github.com/Medical-Event-Data-Standard/MIMIC_IV_MEDS/actions/workflows/tests.yml)
+[![code-quality](https://github.com/Medical-Event-Data-Standard/MIMIC_IV_MEDS/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/Medical-Event-Data-Standard/MIMIC_IV_MEDS/actions/workflows/code-quality-main.yaml)
 ![python](https://img.shields.io/badge/-Python_3.11-blue?logo=python&logoColor=white)
-[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/mmcdermott/MIMIC_IV_MEDS#license)
-[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/pulls)
-[![contributors](https://img.shields.io/github/contributors/mmcdermott/MIMIC_IV_MEDS.svg)](https://github.com/mmcdermott/MIMIC_IV_MEDS/graphs/contributors)
+[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/Medical-Event-Data-Standard/MIMIC_IV_MEDS#license)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Medical-Event-Data-Standard/MIMIC_IV_MEDS/pulls)
+[![contributors](https://img.shields.io/github/contributors/Medical-Event-Data-Standard/MIMIC_IV_MEDS.svg)](https://github.com/Medical-Event-Data-Standard/MIMIC_IV_MEDS/graphs/contributors)
 
 This pipeline extracts the MIMIC-IV dataset (from physionet) into the MEDS format.
 
@@ -55,5 +55,5 @@ well, and this test was run on a machine with poor network transfer speeds and w
 applied to the transformation steps, so these speeds can likely be greatly increased). The output folder of
 data is 9.8 GB. This can be reduced significantly as well as intermediate files not necessary for the final
 MEDS dataset are retained in additional folders. See
-[this github issue](https://github.com/mmcdermott/MEDS_transforms/issues/235) for tracking on ensuring these
+[this github issue](https://github.com/Medical-Event-Data-Standard/MEDS_transforms/issues/235) for tracking on ensuring these
 directories are automatically cleaned up in the future.
