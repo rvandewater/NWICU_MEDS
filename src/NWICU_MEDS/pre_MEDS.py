@@ -9,7 +9,7 @@ from pathlib import Path
 import hydra
 import polars as pl
 from MEDS_transforms.extract.utils import get_supported_fp
-from MEDS_transforms.utils import get_shard_prefix, hydra_loguru_init, write_lazyframe
+from MEDS_transforms.utils import get_shard_prefix, write_lazyframe
 from omegaconf import DictConfig
 
 logger = logging.getLogger(__name__)
@@ -218,8 +218,6 @@ def main(cfg: DictConfig):
     symlinked (if they are not modified) or written in processed form to the `MEDS_input_dir` config
     parameter. Hydra is used to manage configuration parameters and logging.
     """
-
-    hydra_loguru_init()
 
     input_dir = Path(cfg.input_dir)
     MEDS_input_dir = Path(cfg.output_dir)
