@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
 """Performs pre-MEDS data wrangling for MIMIC-IV."""
-
+import logging
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 
 import hydra
 import polars as pl
-from loguru import logger
 from MEDS_transforms.extract.utils import get_supported_fp
 from MEDS_transforms.utils import get_shard_prefix, hydra_loguru_init, write_lazyframe
 from omegaconf import DictConfig
+
+logger = logging.getLogger(__name__)
 
 
 def add_dot(code: pl.Expr, position: int) -> pl.Expr:
