@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import hydra
+import polars as pl
 from omegaconf import DictConfig
 
 from . import ETL_CFG, EVENT_CFG, HAS_PRE_MEDS, MAIN_CFG, PRE_MEDS_PY, RUNNER_CFG
@@ -80,6 +81,58 @@ def main(cfg: DictConfig):
 
     command_parts.append("'hydra.searchpath=[pkg://MEDS_transforms.configs]'")
     run_command(command_parts, cfg)
+
+    # Step 3: Backfill + label the code-metadata table.
+    # `extract_code_metadata` only emits codes that matched a configured metadata source. For NWICU
+    # that is DIAGNOSIS only — the lab/vital/procedure crosswalks are keyed on MIMIC-IV itemids that
+    # do not exist in NWICU's own itemid space, so every LAB/PROCEDURE/MEDICATION/structural code is
+    # dropped from metadata/codes.parquet even though its events are present in the data. Rebuild
+    # codes.parquet as the full set of unique data codes (preserving the extracted metadata), and
+    # attach descriptions from NWICU's OWN item dictionaries (d_labitems / d_items) by joining on the
+    # itemid embedded in the code, so a label applies to every unit variant.
+    codes_fp = MEDS_cohort_dir / "metadata" / "codes.parquet"
+    merged = (
+        pl.scan_parquet(str(MEDS_cohort_dir / "data" / "**" / "*.parquet"))
+        .select("code")
+        .unique()
+        .collect()
+    )
+    if codes_fp.is_file():
+        merged = merged.join(pl.read_parquet(codes_fp), on="code", how="left")
+
+    if "description" in merged.columns:
+        # itemid = 2nd segment of `LAB//itemid//unit` or 3rd of `PROCEDURE//START|END//itemid`
+        merged = merged.with_columns(
+            pl.coalesce(
+                pl.col("code").str.extract(r"^LAB//([^/]+)//", 1),
+                pl.col("code").str.extract(r"^PROCEDURE//(?:START|END)//([^/]+)$", 1),
+            ).alias("_itemid")
+        )
+        dicts = []
+        for rel in ("nw_hosp/d_labitems", "nw_icu/d_items"):
+            for ext in (".csv", ".csv.gz"):
+                fp = raw_input_dir / f"{rel}{ext}"
+                if fp.is_file():
+                    dicts.append(
+                        pl.read_csv(fp, infer_schema_length=100000).select(
+                            pl.col("itemid").cast(pl.String).alias("_itemid"),
+                            pl.col("label").alias("_label"),
+                        )
+                    )
+                    break
+        if dicts:
+            labels = pl.concat(dicts, how="diagonal_relaxed").unique("_itemid")
+            merged = (
+                merged.join(labels, on="_itemid", how="left")
+                .with_columns(pl.coalesce("description", "_label").alias("description"))
+                .drop("_label")
+            )
+        merged = merged.drop("_itemid")
+
+    merged.write_parquet(codes_fp)
+    logger.info(
+        f"Backfilled/labeled code metadata: {merged.height} codes -> {codes_fp}"
+    )
 
 
 if __name__ == "__main__":
