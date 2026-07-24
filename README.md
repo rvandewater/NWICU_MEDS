@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/rvandewater/NWICU_MEDS/graph/badge.svg?token=RW6JXHNT0W)](https://codecov.io/gh/rvandewater/NWICU_MEDS)
 [![tests](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/tests.yaml/badge.svg)](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/tests.yml)
 [![code-quality](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/code-quality-main.yaml)
+[![Documentation](https://readthedocs.org/projects/nwicu-meds/badge/?version=latest)](https://nwicu-meds.readthedocs.io/en/latest/)
 [![Python Version](https://img.shields.io/pypi/pyversions/NWICU_MEDS.svg)](https://pypi.python.org/pypi/NWICU_MEDS/)
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/NWICU_MEDS#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/NWICU_MEDS/pulls)
@@ -52,7 +53,7 @@ to run the entire pipeline.
 
 If you find our work useful, please cite the resource through the github repository (or the bibtex entry below), and cite the original dataset through PhysioNet. The following is the recommended citation for this package:
 
-```
+```bibtex
 @software{van_de_Water_NWICU_MEDS_ETL_2025,
 author = {van de Water, Robin Philippus},
 doi = {10.5281/zenodo.14892134},
@@ -66,7 +67,7 @@ year = {2025}
 
 This is the original dataset citation from PhysioNet:
 
-````
+```bibtex
 @article{PhysioNet-nwicu-northwestern-icu-0.1.0,
   author = {Moukheiber, Dana and Temps, William and Molgi, Bhadrappa and Li, Yikuan and Lu, Alice and Nannapaneni, Prasanth and Chahin, Abdulrahman and Hao, Sicheng and {Torres Fabregas}, Felipe and Celi, Leo Anthony and Wong, Adrian and Lloyd, Maxwell and {Borrat Frigola}, Xavier and Lee, Hyung-Chul and Schneider, Daniel and Pollard, Tom and Luo, Yuan and Kho, Abel and Mark, Roger},
   title = {{Northwestern ICU (NWICU) database}},
@@ -78,5 +79,3 @@ This is the original dataset citation from PhysioNet:
   url = {https://doi.org/10.13026/s84w-1829}
 }
 ```
-.
-````
