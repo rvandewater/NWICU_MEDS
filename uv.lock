@@ -913,6 +913,7 @@ wheels = [
 
 [[package]]
 name = "nwicu-meds"
+version = "0.0.13"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
