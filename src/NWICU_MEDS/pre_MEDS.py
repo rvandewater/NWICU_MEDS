@@ -9,8 +9,8 @@ from pathlib import Path
 
 import hydra
 import polars as pl
-from MEDS_transforms.extract.utils import get_supported_fp
-from MEDS_transforms.utils import get_shard_prefix, write_lazyframe
+from NWICU_MEDS.utils import get_supported_fp
+from NWICU_MEDS.utils import get_shard_prefix, write_lazyframe
 from omegaconf import DictConfig
 
 logger = logging.getLogger(__name__)
