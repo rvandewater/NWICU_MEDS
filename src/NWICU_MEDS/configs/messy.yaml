@@ -82,10 +82,20 @@ nw_hosp/admissions:
   # We omit the death event here as it is joined to the data in the subjects table in the pre-MEDS step.
 
 nw_hosp/diagnoses_icd:
+  _table:
+    join:
+      # `add_discharge_time_by_hadm_id`: the diagnosis is stamped at hospital discharge.
+      nw_hosp/admissions: {key: hadm_id, cols: [dischtime]}
+    cols:
+      # `add_icd_diagnosis_dot`: ICD-9 E-codes take the dot after 4 characters, everything else
+      # after 3; codes too short to split are left alone.
+      _d3: '$icd_code[0:3] + "." + $icd_code[3:] if len_chars($icd_code) > 3 else $icd_code'
+      _d4: '$icd_code[0:4] + "." + $icd_code[4:] if len_chars($icd_code) > 4 else $icd_code'
+      norm_icd_code: '$_d4 if ($icd_version == "9" and /^E/ in $icd_code) else $_d3'
   diagnosis:
     code: 'f"DIAGNOSIS//ICD//{$icd_version ?? ''UNK''}//{$icd_code ?? ''UNK''}"'
     hadm_id: $hadm_id
-    time: '$hadm_discharge_time::?"%Y-%m-%d %H:%M:%S"'
+    time: '$dischtime::?"%Y-%m-%d %H:%M:%S"'
     _metadata:
       nw_hosp/d_icd_diagnoses:
         # Join keys: names must match the code expression's component columns. 0.6.x inferred
@@ -121,6 +131,15 @@ nw_hosp/labevents:
         description: $label
 
 nw_hosp/patients:
+  _table:
+    join:
+      # `fix_static_data`: earliest death time per subject, aggregated before the join.
+      # Aggregated joins resolve conflicting values silently, which is the intent here.
+      nw_hosp/admissions: {key: subject_id, cols: {deathtime: min}}
+    cols:
+      # A recorded in-hospital death time wins over the static `dod`.
+      dod_final: '$deathtime ?? $dod'
+      year_of_birth: '($anchor_year - $anchor_age)::str'
   gender:
     code: 'f"GENDER//{$gender ?? ''UNK''}"'
     time: null
@@ -131,7 +150,7 @@ nw_hosp/patients:
     code: MEDS_DEATH # This is the MEDS official code for death.
     # Was a LIST of time_formats; the 0.7 idiom is a coalesce of lenient parses -- each row takes
     # the first format that matches, and rows matching none are dropped (and counted in the logs).
-    time: 'coalesce($dod::?"%Y-%m-%d %H:%M:%S", $dod::?"%Y-%m-%d")'
+    time: 'coalesce($dod_final::?"%Y-%m-%d %H:%M:%S", $dod_final::?"%Y-%m-%d")'
 
 nw_icu/icustays:
   icu_admission:

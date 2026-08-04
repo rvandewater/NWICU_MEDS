@@ -18,70 +18,35 @@ This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/
 
 ```bash
 pip install NWICU_MEDS
-export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
-export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
-MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
+export DATASET_DOWNLOAD_USERNAME=... DATASET_DOWNLOAD_PASSWORD=...
+
+meds-extract-run spec=NWICU output_dir=$MEDS_COHORT_DIR
 ```
-
-When you run this, the program will:
-
-1. Download the needed raw NWICU files for the currently supported version into
-    `$ROOT_OUTPUT_DIR/raw_input`.
-2. Perform initial, pre-MEDS processing on the raw NWICU files, saving the results in
-    `$ROOT_OUTPUT_DIR/pre_MEDS`.
-3. Construct the final MEDS cohort, and save it to `$ROOT_OUTPUT_DIR/MEDS_cohort`.
-
-You can also specify the target directories more directly, with
-
-```bash
-export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
-export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
-MEDS_extract-NWICU raw_input_dir=$RAW_INPUT_DIR pre_MEDS_dir=$PRE_MEDS_DIR MEDS_cohort_dir=$MEDS_COHORT_DIR
-```
-
-## Examples and More Info:
-
-You can run `MEDS_extract-NWICU --help` for more information on the arguments and options. You can also run
-
-```bash
-MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
-```
-
-to run the entire pipeline.
 
 ## Configuration
 
-The entire ETL is described by one file, `src/NWICU_MEDS/configs/messy.yaml` — a
-[MESSY](https://github.com/mmcdermott/MEDS_extract) config carrying three sections:
+**This package contains no ETL code.** The entire pipeline is one file,
+[`src/NWICU_MEDS/configs/messy.yaml`](src/NWICU_MEDS/configs/messy.yaml), registered under the
+`MEDS_extract.pipelines` entry-point group.
 
-- **`sources:`** — where the raw data lives. `meds-extract-download` stages it, with SHA-256
-    verification and resumable transfers. This replaces the old hand-rolled `download.py`.
-- **`etl:`** — the dataset name plus curated stage options (`n_subjects_per_shard`).
-- **the event tables** — what to extract, written in
-    [dftly](https://github.com/mmcdermott/dftly) expressions.
+Everything the old `pre_MEDS.py` did is now config:
 
-Because the config is registered under the `MEDS_extract.pipelines` entry-point group, the
-extraction half is runnable directly, without this package's CLI wrapper:
-
-```bash
-# Stage the raw data only:
-meds-extract-download spec=NWICU output_dir=$RAW_INPUT_DIR
-
-# Run the canonical 8-stage pipeline over already-pre-MEDS'd data:
-meds-extract-run spec=NWICU output_dir=$MEDS_COHORT_DIR download_key=null input_dir=$PRE_MEDS_DIR
-```
+| Was | Now |
+| --- | --- |
+| `fix_static_data` — earliest death time per subject | `_table.join` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
+| DOB from `anchor_year - anchor_age` | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str` |
+| `add_discharge_time_by_hadm_id` | `_table.join` on `hadm_id` for `dischtime` |
+| `add_icd_diagnosis_dot` | three `_table.cols` lines using slice + `len_chars` |
+| Post-hoc `codes.parquet` rebuild | `_metadata` blocks against NWICU's own `d_labitems` / `d_items` |
 
 ### Code descriptions
 
-Lab, chart-event and procedure codes get their descriptions from NWICU's **own** item
-dictionaries (`nw_hosp/d_labitems`, `nw_icu/d_items`) via `_metadata` blocks in the config,
-joined on `itemid` alone so a label applies to every unit variant of a code.
+Lab, chart-event and procedure codes get descriptions from NWICU's **own** item dictionaries via
+`_metadata` blocks, joined on `itemid` alone so a label applies to every unit variant of a code.
+This replaces the Python rebuild that existed because the MIMIC-IV crosswalks are keyed on MIMIC
+itemids that never match NWICU's — a mismatch that now surfaces as a WARNING instead of silently
+matching zero rows.
 
-This replaces the post-hoc `codes.parquet` rebuild the ETL used to perform in Python. It was
-needed because the MIMIC-IV crosswalks NWICU shipped are keyed on MIMIC itemids that never match
-NWICU's own itemid space, so they matched zero rows silently. Under MEDS-Extract 0.7 a
-`_metadata` join that matches nothing emits a WARNING, and join keys are dtype-normalized, so
-this class of silent mismatch is now visible in the logs.
 
 ## Citation
 
