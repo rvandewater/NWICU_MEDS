@@ -49,6 +49,40 @@ MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
 
 to run the entire pipeline.
 
+## Configuration
+
+The entire ETL is described by one file, `src/NWICU_MEDS/configs/messy.yaml` — a
+[MESSY](https://github.com/mmcdermott/MEDS_extract) config carrying three sections:
+
+- **`sources:`** — where the raw data lives. `meds-extract-download` stages it, with SHA-256
+    verification and resumable transfers. This replaces the old hand-rolled `download.py`.
+- **`etl:`** — the dataset name plus curated stage options (`n_subjects_per_shard`).
+- **the event tables** — what to extract, written in
+    [dftly](https://github.com/mmcdermott/dftly) expressions.
+
+Because the config is registered under the `MEDS_extract.pipelines` entry-point group, the
+extraction half is runnable directly, without this package's CLI wrapper:
+
+```bash
+# Stage the raw data only:
+meds-extract-download spec=NWICU output_dir=$RAW_INPUT_DIR
+
+# Run the canonical 8-stage pipeline over already-pre-MEDS'd data:
+meds-extract-run spec=NWICU output_dir=$MEDS_COHORT_DIR download_key=null input_dir=$PRE_MEDS_DIR
+```
+
+### Code descriptions
+
+Lab, chart-event and procedure codes get their descriptions from NWICU's **own** item
+dictionaries (`nw_hosp/d_labitems`, `nw_icu/d_items`) via `_metadata` blocks in the config,
+joined on `itemid` alone so a label applies to every unit variant of a code.
+
+This replaces the post-hoc `codes.parquet` rebuild the ETL used to perform in Python. It was
+needed because the MIMIC-IV crosswalks NWICU shipped are keyed on MIMIC itemids that never match
+NWICU's own itemid space, so they matched zero rows silently. Under MEDS-Extract 0.7 a
+`_metadata` join that matches nothing emits a WARNING, and join keys are dtype-normalized, so
+this class of silent mismatch is now visible in the logs.
+
 ## Citation
 
 If you find our work useful, please cite the resource through the github repository (or the bibtex entry below), and cite the original dataset through PhysioNet. The following is the recommended citation for this package:
