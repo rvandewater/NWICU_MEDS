@@ -19,7 +19,16 @@ classifiers = [
 ]
 # Pure-config ETL: the only runtime dependency is MEDS-Extract itself, which supplies both
 # CLIs (`meds-extract-download`, `meds-extract-run`) and every extraction stage.
-dependencies = ["MEDS-extract[download]>=0.7.0,<0.8"]
+#
+# INTERIM (0.7 migration): MEDS-Extract 0.7.0 is not released yet, so `meds-extract`
+# resolves from the upstream `dev` branch via [tool.uv.sources] below. Git builds of that
+# branch self-identify as `0.6.3.devN`, so the specifier must admit dev pre-releases;
+# switch back to `MEDS-extract[download]>=0.7.0,<0.8` and drop the git source once 0.7.0
+# is on PyPI.
+dependencies = ["MEDS-extract[download]>=0.6.2.dev0,<0.8"]
+
+[tool.uv.sources]
+meds-extract = { git = "https://github.com/mmcdermott/MEDS_extract", branch = "dev" }
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
