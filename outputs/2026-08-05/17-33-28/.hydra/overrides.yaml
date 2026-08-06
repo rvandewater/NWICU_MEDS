@@ -1,0 +1,4 @@
+- spec=NWICU
+- output_dir=/data/nwicu/raw_input
+- concurrency=3
+- do_overwrite=True
