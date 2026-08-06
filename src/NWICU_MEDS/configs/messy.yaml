@@ -104,7 +104,27 @@ nw_hosp/diagnoses_icd:
         icd_code: $icd_code
         description: $long_title
         # Was the 0.6.x `{col}` template "ICD{icd_version}CM/{norm_icd_code}"; now a dftly f-string.
-        parent_codes: 'f"ICD{$icd_version}CM/{$norm_icd_code}"'
+        #
+        # The dot-normalisation is inlined here rather than reusing the `norm_icd_code` defined
+        # in `_table.cols` above. A `_metadata` block is evaluated over the METADATA table
+        # (`nw_hosp/d_icd_diagnoses`: icd_code, icd_version, long_title), not over the event
+        # table, so referencing the event table's derived column failed the stage outright:
+        #   "_metadata block for code '...' references column(s) ['norm_icd_code'] not present
+        #    in the metadata table."
+        # It cannot be hoisted into a shared helper either: every key produced by a `_metadata`
+        # block becomes either a join key or an emitted metadata column, so an intermediate
+        # would leak into `codes.parquet`.
+        #
+        # Semantics preserved verbatim from `_table.cols`: ICD-9 E-codes take the dot after 4
+        # characters, everything else after 3, and codes too short to split are left alone.
+        # `icd_version` is numeric in this table (10) but was compared as a string upstream, so
+        # it is stringified before the comparison rather than relying on a cross-type ==.
+        parent_codes: >-
+          f"ICD{$icd_version}CM/{($icd_code[0:4] + '.' + $icd_code[4:]
+          if len_chars($icd_code) > 4 else $icd_code)
+          if (f'{$icd_version}' == '9' and /^E/ in $icd_code)
+          else ($icd_code[0:3] + '.' + $icd_code[3:]
+          if len_chars($icd_code) > 3 else $icd_code)}"
 
 nw_hosp/emar:
   medication:
