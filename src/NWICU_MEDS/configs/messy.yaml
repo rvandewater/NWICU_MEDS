@@ -60,7 +60,7 @@ _defaults:
 # `insurance` column". In dftly a bare string is a LITERAL, so every such read now carries a `$`.
 # ---------------------------------------------------------------------------
 
-nw_hosp/admissions:
+data/nw_hosp/admissions:
   ed_registration:
     code: ED_REGISTRATION
     time: '$edregtime::?"%Y-%m-%d %H:%M:%S"'
@@ -81,11 +81,11 @@ nw_hosp/admissions:
     hadm_id: $hadm_id
   # We omit the death event here as it is joined to the data in the subjects table in the pre-MEDS step.
 
-nw_hosp/diagnoses_icd:
+data/nw_hosp/diagnoses_icd:
   _table:
     join:
       # `add_discharge_time_by_hadm_id`: the diagnosis is stamped at hospital discharge.
-      nw_hosp/admissions: {key: hadm_id, cols: [dischtime]}
+      data/nw_hosp/admissions: {key: hadm_id, cols: [dischtime]}
     cols:
       # `add_icd_diagnosis_dot`: ICD-9 E-codes take the dot after 4 characters, everything else
       # after 3; codes too short to split are left alone.
@@ -97,7 +97,7 @@ nw_hosp/diagnoses_icd:
     hadm_id: $hadm_id
     time: '$dischtime::?"%Y-%m-%d %H:%M:%S"'
     _metadata:
-      nw_hosp/d_icd_diagnoses:
+      data/nw_hosp/d_icd_diagnoses:
         # Join keys: names must match the code expression's component columns. 0.6.x inferred
         # these implicitly; 0.7.0 requires them to be produced explicitly.
         icd_version: $icd_version
@@ -126,7 +126,7 @@ nw_hosp/diagnoses_icd:
           else ($icd_code[0:3] + '.' + $icd_code[3:]
           if len_chars($icd_code) > 3 else $icd_code)}"
 
-nw_hosp/emar:
+data/nw_hosp/emar:
   medication:
     code: 'f"MEDICATION//{$medication ?? ''UNK''}//{$event_txt ?? ''UNK''}"'
     time: '$charttime::?"%Y-%m-%d %H:%M:%S"'
@@ -134,7 +134,7 @@ nw_hosp/emar:
     emar_id: $emar_id
     emar_seq: $emar_seq
 
-nw_hosp/labevents:
+data/nw_hosp/labevents:
   lab:
     code: 'f"LAB//{$itemid ?? ''UNK''}//{$valueuom ?? ''UNK''}"'
     hadm_id: $hadm_id
@@ -146,16 +146,16 @@ nw_hosp/labevents:
       # NWICU's own lab dictionary. Only `itemid` (of the code's two components) is produced, so
       # this is a PARTIAL match: the label broadcasts to every unit variant of the same itemid.
       # This replaces the post-hoc codes.parquet rebuild the old __main__.py performed in Python.
-      nw_hosp/d_labitems:
+      data/nw_hosp/d_labitems:
         itemid: $itemid
         description: $label
 
-nw_hosp/patients:
+data/nw_hosp/patients:
   _table:
     join:
       # `fix_static_data`: earliest death time per subject, aggregated before the join.
       # Aggregated joins resolve conflicting values silently, which is the intent here.
-      nw_hosp/admissions: {key: subject_id, cols: {deathtime: min}}
+      data/nw_hosp/admissions: {key: subject_id, cols: {deathtime: min}}
     cols:
       # A recorded in-hospital death time wins over the static `dod`.
       dod_final: '$deathtime ?? $dod'
@@ -172,7 +172,7 @@ nw_hosp/patients:
     # the first format that matches, and rows matching none are dropped (and counted in the logs).
     time: 'coalesce($dod_final::?"%Y-%m-%d %H:%M:%S", $dod_final::?"%Y-%m-%d")'
 
-nw_icu/icustays:
+data/nw_icu/icustays:
   icu_admission:
     code: 'f"ICU_ADMISSION//{$first_careunit ?? ''UNK''}"'
     time: '$intime::?"%Y-%m-%d %H:%M:%S"'
@@ -184,7 +184,7 @@ nw_icu/icustays:
     hadm_id: $hadm_id
     icustay_id: $stay_id
 
-nw_icu/chartevents:
+data/nw_icu/chartevents:
   event:
     code: 'f"LAB//{$itemid ?? ''UNK''}//{$valueuom ?? ''UNK''}"'
     time: '$charttime::?"%Y-%m-%d %H:%M:%S"'
@@ -196,18 +196,18 @@ nw_icu/chartevents:
       # Partial match on itemid, as for labevents above. In 0.6.x a `_metadata` block joined
       # against ALL events' component columns, so this would also have (wrongly) attached to
       # labevents' LAB codes; 0.7.0 scopes the join to the declaring event.
-      nw_icu/d_items:
+      data/nw_icu/d_items:
         itemid: $itemid
         description: $label
 
-nw_icu/procedureevents:
+data/nw_icu/procedureevents:
   start:
     code: 'f"PROCEDURE//START//{$itemid ?? ''UNK''}"'
     time: '$starttime::?"%Y-%m-%d %H:%M:%S"'
     hadm_id: $hadm_id
     icustay_id: $stay_id
     _metadata:
-      nw_icu/d_items:
+      data/nw_icu/d_items:
         itemid: $itemid
         description: $label
   end:
@@ -216,6 +216,6 @@ nw_icu/procedureevents:
     hadm_id: $hadm_id
     icustay_id: $stay_id
     _metadata:
-      nw_icu/d_items:
+      data/nw_icu/d_items:
         itemid: $itemid
         description: $label

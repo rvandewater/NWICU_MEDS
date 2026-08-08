@@ -1,6 +1,0 @@
-spec: NWICU
-output_dir: /data/nwicu/raw_input
-key: dataset
-concurrency: 3
-continue_on_error: false
-do_overwrite: false
