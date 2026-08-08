@@ -1,15 +1,3 @@
-# MESSY config for the NWICU MEDS ETL (MEDS-Extract >= 0.7).
-#
-# This single file replaces what used to be spread across four places:
-#   - `dataset.yaml`               -> the `sources:` block below
-#   - `download.py`                -> the `sources:` block below
-#   - `configs/ETL.yaml`           -> the `etl:` block below (the stage DAG is now canonical)
-#   - `configs/event_configs.yaml` -> the event tables below, rewritten in dftly
-#
-# Run the whole ETL with:
-#   meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR
-# (see README.md; `NWICU` is registered via the `MEDS_extract.pipelines` entry point).
-
 sources:
   dataset_version: 0.1.0
 
@@ -19,46 +7,12 @@ sources:
       username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
       password: ${oc.env:DATASET_DOWNLOAD_PASSWORD}
 
-  # MIMIC-IV concept maps. NOTE: every `_metadata` block that consumed these is commented out --
-  # they are keyed on MIMIC-IV itemids, which never match NWICU's own itemid space, so they
-  # matched 0 rows (see the event tables below, which now use NWICU's own d_labitems / d_items
-  # dictionaries instead). They are still staged here to preserve the previous download
-  # behaviour; drop this bucket if you do not need them.
-  common:
-    - type: http
-      urls:
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/d_labitems_to_loinc.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/inputevents_to_rxnorm.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/lab_itemid_to_loinc.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/meas_chartevents_main.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/meas_chartevents_value.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/numerics-summary.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/outputevents_to_loinc.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/proc_datetimeevents.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/proc_itemid.csv
-        - https://raw.githubusercontent.com/MIT-LCP/mimic-code/v2.4.0/mimic-iv/concepts/concept_map/waveforms-summary.csv
-
 etl:
   dataset_name: NWICU
   n_subjects_per_shard: 1000
 
 _defaults:
   subject_id: $subject_id
-
-# ---------------------------------------------------------------------------
-# NOTE ON NULL HANDLING
-#
-# Under 0.6.x a null component of an interpolated code was silently rendered as the literal
-# "UNK" and the row was kept. In 0.7.0 a composite code null-propagates and the row is DROPPED.
-# Every component below is therefore coalesced with `?? 'UNK'` to preserve the previous
-# row-retention behaviour exactly. Where a null component *should* drop the row instead, remove
-# the corresponding `?? 'UNK'` -- that is a data-modelling decision for the maintainers.
-#
-# NOTE ON BARE STRINGS
-#
-# Non-code output columns used to be written as `insurance: insurance`, meaning "read the raw
-# `insurance` column". In dftly a bare string is a LITERAL, so every such read now carries a `$`.
-# ---------------------------------------------------------------------------
 
 data/nw_hosp/admissions:
   ed_registration:
@@ -70,55 +24,43 @@ data/nw_hosp/admissions:
   admission:
     code: 'f"HOSPITAL_ADMISSION//{$admission_type ?? ''UNK''}//{$admission_location ?? ''UNK''}"'
     time: '$admittime::?"%Y-%m-%d %H:%M:%S"'
-    insurance: $insurance
-    language: $language
-    marital_status: $marital_status
-    race: $race
+    hadm_id: $hadm_id
+  # Nulls are deliberately not coalesced here: a missing demographic should produce no
+  # event rather than an `INSURANCE//UNK` code. See "Demographics" in the README.
+  insurance:
+    code: f"INSURANCE//{$insurance}"
+    time: '$admittime::?"%Y-%m-%d %H:%M:%S"'
+    hadm_id: $hadm_id
+  language:
+    code: f"LANGUAGE//{$language}"
+    time: '$admittime::?"%Y-%m-%d %H:%M:%S"'
+    hadm_id: $hadm_id
+  marital_status:
+    code: f"MARITAL_STATUS//{$marital_status}"
+    time: '$admittime::?"%Y-%m-%d %H:%M:%S"'
+    hadm_id: $hadm_id
+  race:
+    code: f"RACE//{$race}"
+    time: '$admittime::?"%Y-%m-%d %H:%M:%S"'
     hadm_id: $hadm_id
   discharge:
     code: 'f"HOSPITAL_DISCHARGE//{$discharge_location ?? ''UNK''}"'
     time: '$dischtime::?"%Y-%m-%d %H:%M:%S"'
     hadm_id: $hadm_id
-  # We omit the death event here as it is joined to the data in the subjects table in the pre-MEDS step.
 
 data/nw_hosp/diagnoses_icd:
   _table:
     join:
-      # `add_discharge_time_by_hadm_id`: the diagnosis is stamped at hospital discharge.
       data/nw_hosp/admissions: {key: hadm_id, cols: [dischtime]}
-    cols:
-      # `add_icd_diagnosis_dot`: ICD-9 E-codes take the dot after 4 characters, everything else
-      # after 3; codes too short to split are left alone.
-      _d3: '$icd_code[0:3] + "." + $icd_code[3:] if len_chars($icd_code) > 3 else $icd_code'
-      _d4: '$icd_code[0:4] + "." + $icd_code[4:] if len_chars($icd_code) > 4 else $icd_code'
-      norm_icd_code: '$_d4 if ($icd_version == "9" and /^E/ in $icd_code) else $_d3'
   diagnosis:
     code: 'f"DIAGNOSIS//ICD//{$icd_version ?? ''UNK''}//{$icd_code ?? ''UNK''}"'
     hadm_id: $hadm_id
     time: '$dischtime::?"%Y-%m-%d %H:%M:%S"'
     _metadata:
       data/nw_hosp/d_icd_diagnoses:
-        # Join keys: names must match the code expression's component columns. 0.6.x inferred
-        # these implicitly; 0.7.0 requires them to be produced explicitly.
         icd_version: $icd_version
         icd_code: $icd_code
         description: $long_title
-        # Was the 0.6.x `{col}` template "ICD{icd_version}CM/{norm_icd_code}"; now a dftly f-string.
-        #
-        # The dot-normalisation is inlined here rather than reusing the `norm_icd_code` defined
-        # in `_table.cols` above. A `_metadata` block is evaluated over the METADATA table
-        # (`nw_hosp/d_icd_diagnoses`: icd_code, icd_version, long_title), not over the event
-        # table, so referencing the event table's derived column failed the stage outright:
-        #   "_metadata block for code '...' references column(s) ['norm_icd_code'] not present
-        #    in the metadata table."
-        # It cannot be hoisted into a shared helper either: every key produced by a `_metadata`
-        # block becomes either a join key or an emitted metadata column, so an intermediate
-        # would leak into `codes.parquet`.
-        #
-        # Semantics preserved verbatim from `_table.cols`: ICD-9 E-codes take the dot after 4
-        # characters, everything else after 3, and codes too short to split are left alone.
-        # `icd_version` is numeric in this table (10) but was compared as a string upstream, so
-        # it is stringified before the comparison rather than relying on a cross-type ==.
         parent_codes: >-
           f"ICD{$icd_version}CM/{($icd_code[0:4] + '.' + $icd_code[4:]
           if len_chars($icd_code) > 4 else $icd_code)
@@ -143,9 +85,6 @@ data/nw_hosp/labevents:
     text_value: $value
     priority: $priority
     _metadata:
-      # NWICU's own lab dictionary. Only `itemid` (of the code's two components) is produced, so
-      # this is a PARTIAL match: the label broadcasts to every unit variant of the same itemid.
-      # This replaces the post-hoc codes.parquet rebuild the old __main__.py performed in Python.
       data/nw_hosp/d_labitems:
         itemid: $itemid
         description: $label
@@ -153,23 +92,18 @@ data/nw_hosp/labevents:
 data/nw_hosp/patients:
   _table:
     join:
-      # `fix_static_data`: earliest death time per subject, aggregated before the join.
-      # Aggregated joins resolve conflicting values silently, which is the intent here.
       data/nw_hosp/admissions: {key: subject_id, cols: {deathtime: min}}
     cols:
-      # A recorded in-hospital death time wins over the static `dod`.
       dod_final: '$deathtime ?? $dod'
       year_of_birth: '($anchor_year - $anchor_age)::str'
   gender:
     code: 'f"GENDER//{$gender ?? ''UNK''}"'
     time: null
   dob:
-    code: MEDS_BIRTH # This is the MEDS official code for birth.
+    code: MEDS_BIRTH
     time: '$year_of_birth::?"%Y"'
   death:
-    code: MEDS_DEATH # This is the MEDS official code for death.
-    # Was a LIST of time_formats; the 0.7 idiom is a coalesce of lenient parses -- each row takes
-    # the first format that matches, and rows matching none are dropped (and counted in the logs).
+    code: MEDS_DEATH
     time: 'coalesce($dod_final::?"%Y-%m-%d %H:%M:%S", $dod_final::?"%Y-%m-%d")'
 
 data/nw_icu/icustays:
@@ -193,9 +127,6 @@ data/nw_icu/chartevents:
     hadm_id: $hadm_id
     icustay_id: $stay_id
     _metadata:
-      # Partial match on itemid, as for labevents above. In 0.6.x a `_metadata` block joined
-      # against ALL events' component columns, so this would also have (wrongly) attached to
-      # labevents' LAB codes; 0.7.0 scopes the join to the declaring event.
       data/nw_icu/d_items:
         itemid: $itemid
         description: $label

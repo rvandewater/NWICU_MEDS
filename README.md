@@ -36,8 +36,27 @@ Everything the old `pre_MEDS.py` did is now config:
 | `fix_static_data` — earliest death time per subject | `_table.join` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
 | DOB from `anchor_year - anchor_age` | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str` |
 | `add_discharge_time_by_hadm_id` | `_table.join` on `hadm_id` for `dischtime` |
-| `add_icd_diagnosis_dot` | three `_table.cols` lines using slice + `len_chars` |
+| `add_icd_diagnosis_dot` | inlined into the diagnosis `parent_codes` expression |
 | Post-hoc `codes.parquet` rebuild | `_metadata` blocks against NWICU's own `d_labitems` / `d_items` |
+
+### Demographics
+
+`insurance`, `language`, `marital_status` and `race` are properties of the subject rather than
+annotations on the admission, so each is emitted as its own event — `INSURANCE//…`,
+`LANGUAGE//…`, `MARITAL_STATUS//…`, `RACE//…` — co-timed with the admission, since NWICU records
+no separate timestamp for them.
+
+Their nulls are deliberately **not** coalesced to `UNK`, unlike the composite codes elsewhere in
+this config. A null code component drops the row under MEDS-Extract 0.7, so a missing
+demographic produces no event at all rather than minting a `RACE//UNK` code that would read as
+an observed category.
+
+### Raw data layout
+
+The PhysioNet release nests its tables one level down, under `data/nw_hosp/` and
+`data/nw_icu/`, and the table prefixes in the config match that exactly. This matters if you
+stage the raw data yourself: point `input_dir` at the directory *containing* `data/`, which is
+what `meds-extract-download` writes, not at `data/` itself.
 
 ### Code descriptions
 
