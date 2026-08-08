@@ -18,36 +18,54 @@ This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/
 
 ```bash
 pip install NWICU_MEDS
-export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
-export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
-MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
+export DATASET_DOWNLOAD_USERNAME=... DATASET_DOWNLOAD_PASSWORD=...
+
+meds-extract-run spec=NWICU output_dir=$MEDS_COHORT_DIR
 ```
 
-When you run this, the program will:
+## Configuration
 
-1. Download the needed raw NWICU files for the currently supported version into
-    `$ROOT_OUTPUT_DIR/raw_input`.
-2. Perform initial, pre-MEDS processing on the raw NWICU files, saving the results in
-    `$ROOT_OUTPUT_DIR/pre_MEDS`.
-3. Construct the final MEDS cohort, and save it to `$ROOT_OUTPUT_DIR/MEDS_cohort`.
+**This package contains no ETL code.** The entire pipeline is one file,
+[`src/NWICU_MEDS/messy.yaml`](src/NWICU_MEDS/messy.yaml), registered under the
+`MEDS_extract.pipelines` entry-point group.
 
-You can also specify the target directories more directly, with
+Everything the old `pre_MEDS.py` did is now config:
 
-```bash
-export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
-export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
-MEDS_extract-NWICU raw_input_dir=$RAW_INPUT_DIR pre_MEDS_dir=$PRE_MEDS_DIR MEDS_cohort_dir=$MEDS_COHORT_DIR
-```
+| Was | Now |
+| --- | --- |
+| `fix_static_data` — earliest death time per subject | `_table.join` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
+| DOB from `anchor_year - anchor_age` | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str` |
+| `add_discharge_time_by_hadm_id` | `_table.join` on `hadm_id` for `dischtime` |
+| `add_icd_diagnosis_dot` | inlined into the diagnosis `parent_codes` expression |
+| Post-hoc `codes.parquet` rebuild | `_metadata` blocks against NWICU's own `d_labitems` / `d_items` |
 
-## Examples and More Info:
+### Demographics
 
-You can run `MEDS_extract-NWICU --help` for more information on the arguments and options. You can also run
+`insurance`, `language`, `marital_status` and `race` are properties of the subject rather than
+annotations on the admission, so each is emitted as its own event — `INSURANCE//…`,
+`LANGUAGE//…`, `MARITAL_STATUS//…`, `RACE//…` — co-timed with the admission, since NWICU records
+no separate timestamp for them.
 
-```bash
-MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
-```
+Their nulls are deliberately **not** coalesced to `UNK`, unlike the composite codes elsewhere in
+this config. A null code component drops the row under MEDS-Extract 0.7, so a missing
+demographic produces no event at all rather than minting a `RACE//UNK` code that would read as
+an observed category.
 
-to run the entire pipeline.
+### Raw data layout
+
+The PhysioNet release nests its tables one level down, under `data/nw_hosp/` and
+`data/nw_icu/`, and the table prefixes in the config match that exactly. This matters if you
+stage the raw data yourself: point `input_dir` at the directory *containing* `data/`, which is
+what `meds-extract-download` writes, not at `data/` itself.
+
+### Code descriptions
+
+Lab, chart-event and procedure codes get descriptions from NWICU's **own** item dictionaries via
+`_metadata` blocks, joined on `itemid` alone so a label applies to every unit variant of a code.
+This replaces the Python rebuild that existed because the MIMIC-IV crosswalks are keyed on MIMIC
+itemids that never match NWICU's — a mismatch that now surfaces as a WARNING instead of silently
+matching zero rows.
+
 
 ## Citation
 

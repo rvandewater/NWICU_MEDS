@@ -1,0 +1,152 @@
+sources:
+  dataset_version: 0.1.0
+
+  dataset:
+    - type: physionet
+      base_url: https://physionet.org/files/nwicu-northwestern-icu/${sources.dataset_version}
+      username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
+      password: ${oc.env:DATASET_DOWNLOAD_PASSWORD}
+
+etl:
+  dataset_name: NWICU
+  n_subjects_per_shard: 1000
+
+_defaults:
+  subject_id: $subject_id
+
+data/nw_hosp/admissions:
+  ed_registration:
+    code: ED_REGISTRATION
+    time: $edregtime::?"%Y-%m-%d %H:%M:%S"
+  ed_out:
+    code: ED_OUT
+    time: $edouttime::?"%Y-%m-%d %H:%M:%S"
+  admission:
+    code: 'f"HOSPITAL_ADMISSION//{$admission_type ?? ''UNK''}//{$admission_location ?? ''UNK''}"'
+    time: $admittime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+  # Nulls are deliberately not coalesced here: a missing demographic should produce no
+  # event rather than an `INSURANCE//UNK` code. See "Demographics" in the README.
+  insurance:
+    code: f"INSURANCE//{$insurance}"
+    time: $admittime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+  language:
+    code: f"LANGUAGE//{$language}"
+    time: $admittime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+  marital_status:
+    code: f"MARITAL_STATUS//{$marital_status}"
+    time: $admittime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+  race:
+    code: f"RACE//{$race}"
+    time: $admittime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+  discharge:
+    code: 'f"HOSPITAL_DISCHARGE//{$discharge_location ?? ''UNK''}"'
+    time: $dischtime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+
+data/nw_hosp/diagnoses_icd:
+  _table:
+    join:
+      data/nw_hosp/admissions: {key: hadm_id, cols: [dischtime]}
+  diagnosis:
+    code: 'f"DIAGNOSIS//ICD//{$icd_version ?? ''UNK''}//{$icd_code ?? ''UNK''}"'
+    hadm_id: $hadm_id
+    time: $dischtime::?"%Y-%m-%d %H:%M:%S"
+    _metadata:
+      data/nw_hosp/d_icd_diagnoses:
+        icd_version: $icd_version
+        icd_code: $icd_code
+        description: $long_title
+        parent_codes: >-
+          f"ICD{$icd_version}CM/{($icd_code[0:4] + '.' + $icd_code[4:]
+          if len_chars($icd_code) > 4 else $icd_code)
+          if (f'{$icd_version}' == '9' and /^E/ in $icd_code)
+          else ($icd_code[0:3] + '.' + $icd_code[3:]
+          if len_chars($icd_code) > 3 else $icd_code)}"
+
+data/nw_hosp/emar:
+  medication:
+    code: 'f"MEDICATION//{$medication ?? ''UNK''}//{$event_txt ?? ''UNK''}"'
+    time: $charttime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+    emar_id: $emar_id
+    emar_seq: $emar_seq
+
+data/nw_hosp/labevents:
+  lab:
+    code: 'f"LAB//{$itemid ?? ''UNK''}//{$valueuom ?? ''UNK''}"'
+    hadm_id: $hadm_id
+    time: $charttime::?"%Y-%m-%d %H:%M:%S"
+    numeric_value: $valuenum
+    text_value: $value
+    priority: $priority
+    _metadata:
+      data/nw_hosp/d_labitems:
+        itemid: $itemid
+        description: $label
+
+data/nw_hosp/patients:
+  _table:
+    join:
+      data/nw_hosp/admissions: {key: subject_id, cols: {deathtime: min}}
+    cols:
+      dod_final: $deathtime ?? $dod
+      year_of_birth: ($anchor_year - $anchor_age)::str
+  gender:
+    code: 'f"GENDER//{$gender ?? ''UNK''}"'
+    time: null
+  dob:
+    code: MEDS_BIRTH
+    time: $year_of_birth::?"%Y"
+  death:
+    code: MEDS_DEATH
+    time: coalesce($dod_final::?"%Y-%m-%d %H:%M:%S", $dod_final::?"%Y-%m-%d")
+
+data/nw_icu/icustays:
+  icu_admission:
+    code: 'f"ICU_ADMISSION//{$first_careunit ?? ''UNK''}"'
+    time: $intime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+    icustay_id: $stay_id
+  icu_discharge:
+    code: 'f"ICU_DISCHARGE//{$last_careunit ?? ''UNK''}"'
+    time: $outtime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+    icustay_id: $stay_id
+
+data/nw_icu/chartevents:
+  event:
+    code: 'f"LAB//{$itemid ?? ''UNK''}//{$valueuom ?? ''UNK''}"'
+    time: $charttime::?"%Y-%m-%d %H:%M:%S"
+    numeric_value: $valuenum
+    text_value: $value
+    hadm_id: $hadm_id
+    icustay_id: $stay_id
+    _metadata:
+      data/nw_icu/d_items:
+        itemid: $itemid
+        description: $label
+
+data/nw_icu/procedureevents:
+  start:
+    code: 'f"PROCEDURE//START//{$itemid ?? ''UNK''}"'
+    time: $starttime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+    icustay_id: $stay_id
+    _metadata:
+      data/nw_icu/d_items:
+        itemid: $itemid
+        description: $label
+  end:
+    code: 'f"PROCEDURE//END//{$itemid ?? ''UNK''}"'
+    time: $endtime::?"%Y-%m-%d %H:%M:%S"
+    hadm_id: $hadm_id
+    icustay_id: $stay_id
+    _metadata:
+      data/nw_icu/d_items:
+        itemid: $itemid
+        description: $label
