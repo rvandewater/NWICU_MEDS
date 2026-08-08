@@ -38,13 +38,9 @@ docs = [
 # Registers the bundled MESSY file as a MEDS-Extract dataset pipeline, so the whole
 # ETL is runnable as `meds-extract-run spec=NWICU output_dir=...`.
 [project.entry-points."MEDS_extract.pipelines"]
-NWICU = "NWICU_MEDS.configs:messy.yaml"
+NWICU = "NWICU_MEDS:messy.yaml"
 
 [project.urls]
 Homepage = "https://github.com/rvandewater/NWICU_MEDS"
 Issues = "https://github.com/rvandewater/NWICU_MEDS/issues"
 
-[tool.pytest.ini_options]
-# `--doctest-modules` is scoped to the modules CI passes on the command line. The doctests in
-# `utils.py` / `unpack.py` are the API-level tests for those helpers.
-doctest_optionflags = ["NORMALIZE_WHITESPACE", "ELLIPSIS"]

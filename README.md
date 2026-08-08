@@ -26,7 +26,7 @@ meds-extract-run spec=NWICU output_dir=$MEDS_COHORT_DIR
 ## Configuration
 
 **This package contains no ETL code.** The entire pipeline is one file,
-[`src/NWICU_MEDS/configs/messy.yaml`](src/NWICU_MEDS/configs/messy.yaml), registered under the
+[`src/NWICU_MEDS/messy.yaml`](src/NWICU_MEDS/messy.yaml), registered under the
 `MEDS_extract.pipelines` entry-point group.
 
 Everything the old `pre_MEDS.py` did is now config:
