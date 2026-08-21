@@ -124,6 +124,54 @@ nw_hosp/patients:
       - "%Y-%m-%d %H:%M:%S"
       - "%Y-%m-%d"
 
+# NWICU ships `prescriptions` (medication ORDERS) but not `pharmacy`, which is why the
+# pharmacy block below is disabled -- it references a table absent from the release. The two
+# tables carry the same concept under different column names: pharmacy has `medication`,
+# prescriptions has `drug`. Without this block the only medication events in the extract come
+# from `emar` (administration), so ordering events -- MEDICATION//START and MEDICATION//STOP --
+# are missing entirely. MIMIC-IV emits both families, so including this keeps the two datasets'
+# medication vocabularies comparable.
+#
+# Column names verified against the release: nw_hosp/prescriptions.csv.gz carries the full
+# MIMIC-IV prescriptions schema (subject_id, hadm_id, pharmacy_id, poe_id, poe_seq,
+# order_provider_id, starttime, stoptime, drug_type, drug, formulary_drug_cd, gsn, ndc,
+# prod_strength, form_rx, dose_val_rx, dose_unit_rx, form_val_disp, form_unit_disp,
+# doses_per_24_hrs, route), 1,852,984 rows.
+#
+# `route` is carried because it is the only reliable way to separate, say, an intravenous
+# vasopressor from an oral decongestant sharing a stem: the release has 418,411 Intravenous
+# against 859,578 Oral orders. `drug_type` here holds a therapeutic class rather than
+# MIMIC's MAIN/BASE/ADDITIVE and is deliberately NOT emitted as a code -- that would add a
+# vocabulary family this ETL does not otherwise have, which is a larger design decision than
+# this change.
+nw_hosp/prescriptions:
+  medication_start:
+    code:
+      - MEDICATION
+      - START
+      - col(drug)
+    time: col(starttime)
+    hadm_id: hadm_id
+    route: route
+    doses_per_24_hrs: doses_per_24_hrs
+    poe_id: poe_id
+    # Observed format is "%Y-%m-%d %H:%M:%S"; the date-only fallback is kept because the
+    # pharmacy block upstream needed it and a mixed column would otherwise fail outright.
+    time_format:
+      - "%Y-%m-%d %H:%M:%S"
+      - "%Y-%m-%d"
+  medication_stop:
+    code:
+      - MEDICATION
+      - STOP
+      - col(drug)
+    time: col(stoptime)
+    hadm_id: hadm_id
+    poe_id: poe_id
+    time_format:
+      - "%Y-%m-%d %H:%M:%S"
+      - "%Y-%m-%d"
+
 #nw_hosp/pharmacy:
 #  medication_start:
 #    code:
