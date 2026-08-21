@@ -124,6 +124,42 @@ nw_hosp/patients:
       - "%Y-%m-%d %H:%M:%S"
       - "%Y-%m-%d"
 
+# NWICU ships `prescriptions` (medication ORDERS) but not `pharmacy`, which is why the
+# pharmacy block below is disabled -- it references a table absent from the release. The two
+# tables carry the same concept under different column names: pharmacy has `medication`,
+# prescriptions has `drug`. Without this block the only medication events in the extract come
+# from `emar` (administration), so ordering events -- MEDICATION//START and MEDICATION//STOP --
+# are missing entirely. MIMIC-IV emits both families, so including this keeps the two datasets'
+# medication vocabularies comparable.
+#
+# Deliberately minimal: only columns whose presence is certain from the MIMIC-IV prescriptions
+# schema NWICU mirrors. `route`, `frequency`, `doses_per_24_hrs`, `poe_id` and the dose columns
+# are all plausible additions but are NOT included, because a column named here that is absent
+# in the release fails the extraction. Add them once the schema is confirmed against the
+# downloaded files.
+nw_hosp/prescriptions:
+  medication_start:
+    code:
+      - MEDICATION
+      - START
+      - col(drug)
+    time: col(starttime)
+    hadm_id: hadm_id
+    # Prescription times mix datetime and date-only; both formats are tried in order.
+    time_format:
+      - "%Y-%m-%d %H:%M:%S"
+      - "%Y-%m-%d"
+  medication_stop:
+    code:
+      - MEDICATION
+      - STOP
+      - col(drug)
+    time: col(stoptime)
+    hadm_id: hadm_id
+    time_format:
+      - "%Y-%m-%d %H:%M:%S"
+      - "%Y-%m-%d"
+
 #nw_hosp/pharmacy:
 #  medication_start:
 #    code:
