@@ -16,54 +16,69 @@ This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/
 
 ## Usage:
 
+With download:
+
 ```bash
 pip install NWICU_MEDS
-export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
-export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
-MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
+export DATASET_DOWNLOAD_USERNAME=...
+export DATASET_DOWNLOAD_PASSWORD=...
+
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR
 ```
 
-When you run this, the program will:
-
-1. Download the needed raw NWICU files for the currently supported version into
-    `$ROOT_OUTPUT_DIR/raw_input`.
-2. Perform initial, pre-MEDS processing on the raw NWICU files, saving the results in
-    `$ROOT_OUTPUT_DIR/pre_MEDS`.
-3. Construct the final MEDS cohort, and save it to `$ROOT_OUTPUT_DIR/MEDS_cohort`.
-
-You can also specify the target directories more directly, with
+Without download (if you already have the dataset):
 
 ```bash
-export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
-export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
-MEDS_extract-NWICU raw_input_dir=$RAW_INPUT_DIR pre_MEDS_dir=$PRE_MEDS_DIR MEDS_cohort_dir=$MEDS_COHORT_DIR
+pip install NWICU_MEDS
+meds-extract-run spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR output_dir=$OUTPUT_DIR
 ```
 
-## Examples and More Info:
+## Configuration
 
-You can run `MEDS_extract-NWICU --help` for more information on the arguments and options. You can also run
+**This package contains no ETL code.** The entire pipeline is one file,
+[`src/NWICU_MEDS/messy.yaml`](src/NWICU_MEDS/messy.yaml), registered under the
+`MEDS_extract.pipelines` entry-point group.
 
-```bash
-MEDS_extract-NWICU root_output_dir=$ROOT_OUTPUT_DIR
-```
+Everything the old `pre_MEDS.py` did is now config:
 
-to run the entire pipeline.
+| Was                                                 | Now                                                                               |
+| --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `fix_static_data` — earliest death time per subject | `_table.join` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
+| DOB from `anchor_year - anchor_age`                 | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str`                 |
+| `add_discharge_time_by_hadm_id`                     | `_table.join` on `hadm_id` for `dischtime`                                        |
+| `add_icd_diagnosis_dot`                             | inlined into the diagnosis `parent_codes` expression                              |
+| Post-hoc `codes.parquet` rebuild                    | `_metadata` blocks against NWICU's own `d_labitems` / `d_items`                   |
+
+### Demographics
+
+`insurance`, `language`, `marital_status` and `race` are properties of the subject rather than
+annotations on the admission, so each is emitted as its own event — `INSURANCE//…`,
+`LANGUAGE//…`, `MARITAL_STATUS//…`, `RACE//…` — co-timed with the admission, since NWICU records
+no separate timestamp for them.
+
+Their nulls are deliberately **not** coalesced to `UNK`, unlike the composite codes elsewhere in
+this config. A null code component drops the row under MEDS-Extract 0.7, so a missing
+demographic produces no event at all rather than minting a `RACE//UNK` code that would read as
+an observed category.
+
+### Raw data layout
+
+The PhysioNet release nests its tables one level down, under `data/nw_hosp/` and
+`data/nw_icu/`, and the table prefixes in the config match that exactly. This matters if you
+stage the raw data yourself: point `input_dir` at the directory *containing* `data/`, which is
+what `meds-extract-download` writes, not at `data/` itself.
+
+### Code descriptions
+
+Lab, chart-event and procedure codes get descriptions from NWICU's **own** item dictionaries via
+`_metadata` blocks, joined on `itemid` alone so a label applies to every unit variant of a code.
+This replaces the Python rebuild that existed because the MIMIC-IV crosswalks are keyed on MIMIC
+itemids that never match NWICU's — a mismatch that now surfaces as a WARNING instead of silently
+matching zero rows.
 
 ## Citation
 
-If you find our work useful, please cite the resource through the github repository (or the bibtex entry below), and cite the original dataset through PhysioNet. The following is the recommended citation for this package:
-
-```bibtex
-@software{van_de_Water_NWICU_MEDS_ETL_2025,
-author = {van de Water, Robin Philippus},
-doi = {10.5281/zenodo.14892134},
-license = {MIT},
-month = feb,
-title = {{NWICU\_MEDS ETL}},
-url = {https://github.com/rvandewater/NWICU_MEDS},
-year = {2025}
-}
-```
+If you find our work useful, please cite the resource through the github repository (or the bibtex entry below), and cite the original dataset through PhysioNet.
 
 This is the original dataset citation from PhysioNet:
 
@@ -77,5 +92,34 @@ This is the original dataset citation from PhysioNet:
   note = {Version 0.1.0},
   doi = {10.13026/s84w-1829},
   url = {https://doi.org/10.13026/s84w-1829}
+}
+```
+
+The following is the recommended citation for this package:
+
+```bibtex
+@software{van_de_Water_NWICU_MEDS_ETL_2025,
+author = {van de Water, Robin Philippus},
+doi = {10.5281/zenodo.14892134},
+license = {MIT},
+month = feb,
+title = {{NWICU\_MEDS ETL}},
+url = {https://github.com/rvandewater/NWICU_MEDS},
+year = {2025}
+}
+```
+
+For citing MEDS in general:
+
+```bibtex
+@article{mcdermott2026meds,
+  title={MEDS—An Emerging Data Standard and Ecosystem for Health AI Research},
+  author={McDermott, Matthew BA and Steinberg, Ethan and Fries, Jason A and van de Water, Robin P and Pang, Chao and Rockenschaub, Patrick and Renc, Pawel and Oh, Jungwoo and Stankevi{\v{c}}i{\=u}t{\.e}, Kamil{\.e} and Xu, Justin and others},
+  journal={NEJM AI},
+  volume={3},
+  number={6},
+  pages={AIra2501253},
+  year={2026},
+  publisher={Massachusetts Medical Society}
 }
 ```
