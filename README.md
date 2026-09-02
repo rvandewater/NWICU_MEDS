@@ -2,15 +2,17 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/NWICU_MEDS)](https://pypi.org/project/NWICU_MEDS/)
 [![codecov](https://codecov.io/gh/rvandewater/NWICU_MEDS/graph/badge.svg?token=RW6JXHNT0W)](https://codecov.io/gh/rvandewater/NWICU_MEDS)
-[![tests](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/tests.yaml/badge.svg)](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/tests.yml)
+[![tests](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/synthetic-etl.yaml/badge.svg)](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/synthetic-etl.yaml)
 [![code-quality](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/rvandewater/NWICU_MEDS/actions/workflows/code-quality-main.yaml)
 [![Documentation](https://readthedocs.org/projects/nwicu-meds/badge/?version=latest)](https://nwicu-meds.readthedocs.io/en/latest/)
-[![Python Version](https://img.shields.io/pypi/pyversions/NWICU_MEDS.svg)](https://pypi.python.org/pypi/NWICU_MEDS/)
+![python](https://img.shields.io/badge/python-%3E%3D3.11.4%2C%20%3C3.14-blue?logo=python&logoColor=white)
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/NWICU_MEDS#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/NWICU_MEDS/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/NWICU_MEDS.svg)](https://github.com/rvandewater/NWICU_MEDS/graphs/contributors)
 [![DOI](https://zenodo.org/badge/913786544.svg)](https://doi.org/10.5281/zenodo.14892134)
-[![MEDS v0.3.3](https://img.shields.io/badge/MEDS-0.3.3-blue)](https://medical-event-data-standard.github.io/)
+![Static Badge](https://img.shields.io/badge/MEDS-0.4.1-blue)
+
+Northwestern Medicine (NM) is a network of twelve hospitals located in Chicago and the surrounding area. NM originally used a variety of electronic medical record (EMR) systems across the network, but in 2018 migrated all the hospitals to the same EMR platform, Epic. As an essential element of routine medical care, the EMR collects data on patients, admissions, diagnoses, patient status, procedures, medications, and all the other aspects of patient care.
 
 This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/content/nwicu-northwestern-icu/0.1.0/) into the MEDS format.
 
