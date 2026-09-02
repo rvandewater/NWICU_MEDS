@@ -880,7 +880,7 @@ wheels = [
 
 [[package]]
 name = "nwicu-meds"
-version = "0.0.13"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "meds-extract", extra = ["download"] },

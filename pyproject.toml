@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "NWICU-MEDS"
-version = "0.0.13"
+version = "1.0.0"
 authors = [
   { name="Robin van de Water", email="robin.vandewater@hpi.de"},
   { name="Matthew McDermott", email="mattmcdermott8@gmail.com" },
