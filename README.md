@@ -70,13 +70,50 @@ The PhysioNet release nests its tables one level down, under `data/nw_hosp/` and
 stage the raw data yourself: point `input_dir` at the directory *containing* `data/`, which is
 what `meds-extract-download` writes, not at `data/` itself.
 
-### Code descriptions
+### Code metadata: descriptions and parent codes
 
-Lab, chart-event and procedure codes get descriptions from NWICU's **own** item dictionaries via
-`_metadata` blocks, joined on `itemid` alone so a label applies to every unit variant of a code.
-This replaces the Python rebuild that existed because the MIMIC-IV crosswalks are keyed on MIMIC
-itemids that never match NWICU's — a mismatch that now surfaces as a WARNING instead of silently
-matching zero rows.
+Every code in `metadata/codes.parquet` gets a `description`, and codes from a standard
+vocabulary get `parent_codes` (`ICD9CM/…`, `ICD10CM/…`, `NDC/…`, `LOINC/…`, named after the OMOP
+`vocabulary_id`) so vocabulary tooling such as OHDSI Athena can resolve them. Each family gets
+its metadata through a `_metadata` block in `messy.yaml`:
+
+| Code family                                                                                                                                                       | Route                                                                                    | Source                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DIAGNOSIS//ICD//…`                                                                                                                                               | NWICU's `d_icd_diagnoses`, joined on `icd_version` and `icd_code`                        | `long_title`; ICD-9-CM / ICD-10-CM parent with the dot restored                                                                                                                                                                                                                                                                                     |
+| `LAB//…` (from `labevents` and `chartevents`), `PROCEDURE//…`                                                                                                     | NWICU's `d_labitems` / `d_items`, joined on `itemid` alone, so a label covers every unit | `label`; for 45 lab and 5 chart itemids also an inferred LOINC parent (below)                                                                                                                                                                                                                                                                       |
+| `MEDICATION//START//…`, `MEDICATION//STOP//…`                                                                                                                     | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and stop codes)                                                                                                                                                                                                              |
+| `MEDICATION//…` (eMAR), `HOSPITAL_ADMISSION`, `HOSPITAL_DISCHARGE`, `INSURANCE`, `LANGUAGE`, `MARITAL_STATUS`, `RACE`, `GENDER`, `ICU_ADMISSION`, `ICU_DISCHARGE` | `_self` template over the code's components                                              | the column each component comes from, with its meaning from the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/modules/) (source: [MIT-LCP/mimic-website](https://github.com/MIT-LCP/mimic-website), MIT, 8182227), whose structure NWICU retains ([NWICU 0.1.0 project page](https://physionet.org/content/nwicu-northwestern-icu/0.1.0/)) |
+| `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text, via a constant code column (below)                                         | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
+
+The item dictionaries replace a Python rebuild that existed because the MIMIC-IV crosswalks are
+keyed on MIMIC itemids that never match NWICU's, a mismatch that now surfaces as a WARNING instead
+of silently matching zero rows.
+
+**LOINC parents are inferred.** NWICU ships no LOINC codes in its dictionaries. The LOINC parent of
+a lab or chart itemid comes from a bridge across two public, curated mappings: the itemid is
+mapped to a concept by [WeavEHR](https://github.com/aidh-ms/WeavEHR) (`configs/datasets/nwicu/0.1.0/mappings`,
+MIT, 210a539), WeavEHR maps the same concept to a MIMIC-IV item (`mimic-iv/2.2/mappings`), and
+[mimic-code](https://github.com/MIT-LCP/mimic-code) (`mimic-iv/concepts/concept_map/d_labitems_to_loinc.csv`
+and `meas_chartevents_main.csv`, MIT, v2.4.0) gives that item's LOINC code. Only concepts whose
+MIMIC-IV items share one LOINC code are used (glucose, arterial and non-invasive blood pressure,
+and respiratory rate map to several, troponin I to none). The parent inherits the MIMIC-IV item's
+specimen and method, which may differ from NWICU's. Every bridge, with both of its ends, is a row
+of [`src/NWICU_MEDS/metadata/loinc_parents.csv`](src/NWICU_MEDS/metadata/loinc_parents.csv); the
+`parent_codes` expressions in the `d_labitems` and `d_items` blocks are written out from it, and
+`tests/test_code_metadata.py` checks that the two agree.
+
+**Literal codes.** MEDS-Extract attaches metadata only through a code's components, so a code
+written as a bare literal (`code: MEDS_BIRTH`) can never be described: the pre-existing
+`codes.parquet` it documents for that case is not read by `meds-extract-run`. These four events
+therefore read their code from a constant `_table.cols` column (`_code_birth: '"MEDS_BIRTH"'`,
+`code: $_code_birth`), which gives the code one component for a `_self` description to attach to.
+The emitted codes and events are unchanged; their `code_template` names the constant column.
+`MEDS_DEATH` is described once, by the `patients` event: `death_untimed` carries no `_metadata`,
+because one code may have only one code template.
+
+The `_self` descriptions restate the code with the NWICU column each part comes from. eMAR
+medication codes get no parent: `emar` has no drug code column, and mapping its drug names to
+RxNorm is a job for a mapping tool, not the ETL.
 
 ## Citation
 

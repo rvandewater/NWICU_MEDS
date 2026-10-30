@@ -15,38 +15,83 @@ _defaults:
   subject_id: $subject_id
 
 data/nw_hosp/admissions:
+  _table:
+    cols:
+      # Constant code columns. MEDS-Extract attaches metadata only through a code's
+      # components, so a bare literal `code: ED_REGISTRATION` can never be described; reading
+      # the same string from a constant column gives the code one component and lets a
+      # `_self` block describe it. The emitted codes are unchanged. See "Code metadata" in
+      # the README.
+      _code_ed_registration: '"ED_REGISTRATION"'
+      _code_ed_out: '"ED_OUT"'
   ed_registration:
-    code: ED_REGISTRATION
+    code: $_code_ed_registration
     time: $edregtime::?"%Y-%m-%d %H:%M:%S"
+    _metadata:
+      _self:
+        description: >-
+          "Emergency department registration (time: NWICU admissions.edregtime)"
   ed_out:
-    code: ED_OUT
+    code: $_code_ed_out
     time: $edouttime::?"%Y-%m-%d %H:%M:%S"
+    _metadata:
+      _self:
+        description: >-
+          "Emergency department discharge (time: NWICU admissions.edouttime)"
   admission:
     code: 'f"HOSPITAL_ADMISSION//{$admission_type ?? ''UNK''}//{$admission_location ?? ''UNK''}"'
     time: $admittime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
+    _metadata:
+      _self:
+        description: >-
+          f"Hospital admission; admission type (urgency): {$admission_type ?? 'UNK'}
+          (NWICU admissions.admission_type); location before arrival: {$admission_location ?? 'UNK'}
+          (admissions.admission_location)"
   # Nulls are deliberately not coalesced here: a missing demographic should produce no
   # event rather than an `INSURANCE//UNK` code. See "Demographics" in the README.
   insurance:
     code: f"INSURANCE//{$insurance}"
     time: $admittime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
+    _metadata:
+      _self:
+        description: >-
+          f"Insurance recorded for the hospital admission: {$insurance} (NWICU admissions.insurance)"
   language:
     code: f"LANGUAGE//{$language}"
     time: $admittime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
+    _metadata:
+      _self:
+        description: >-
+          f"Language recorded for the hospital admission: {$language} (NWICU admissions.language)"
   marital_status:
     code: f"MARITAL_STATUS//{$marital_status}"
     time: $admittime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
+    _metadata:
+      _self:
+        description: >-
+          f"Marital status recorded for the hospital admission: {$marital_status} (NWICU
+          admissions.marital_status)"
   race:
     code: f"RACE//{$race}"
     time: $admittime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
+    _metadata:
+      _self:
+        description: >-
+          f"Race recorded for the hospital admission: {$race} (NWICU admissions.race)"
   discharge:
     code: 'f"HOSPITAL_DISCHARGE//{$discharge_location ?? ''UNK''}"'
     time: $dischtime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
+    _metadata:
+      _self:
+        description: >-
+          f"Hospital discharge; disposition after discharge: {$discharge_location ?? 'UNK'} (NWICU
+          admissions.discharge_location)"
   # Deaths that `patients.deathtime` never received a time for. The `deathtime`-absence guard is
   # load-bearing: without it this double-counts the 3,343 subjects who already have a timed
   # death. See "Deaths" in the README.
@@ -82,6 +127,11 @@ data/nw_hosp/emar:
     hadm_id: $hadm_id
     emar_id: $emar_id
     emar_seq: $emar_seq
+    _metadata:
+      _self:
+        description: >-
+          f"Medication administration record (eMAR): {$medication ?? 'UNK'}; administration status:
+          {$event_txt ?? 'UNK'} (NWICU emar.medication, emar.event_txt)"
 
 data/nw_hosp/labevents:
   lab:
@@ -95,6 +145,54 @@ data/nw_hosp/labevents:
       data/nw_hosp/d_labitems:
         itemid: $itemid
         description: $label
+        # Inferred LOINC parents, one per row of metadata/loinc_parents.csv (which records the
+        # source of each); null for every other itemid. Keep the two in step: the tests check it.
+        parent_codes: >-
+          "LOINC/2160-0" if $itemid::str == "100002"
+          else "LOINC/17861-6" if $itemid::str == "100003"
+          else "LOINC/3094-0" if $itemid::str == "100004"
+          else "LOINC/785-6" if $itemid::str == "100005"
+          else "LOINC/4544-3" if $itemid::str == "100006"
+          else "LOINC/718-7" if $itemid::str == "100007"
+          else "LOINC/788-0" if $itemid::str == "100008"
+          else "LOINC/19123-9" if $itemid::str == "100009"
+          else "LOINC/2951-2" if $itemid::str == "100010"
+          else "LOINC/2823-3" if $itemid::str == "100011"
+          else "LOINC/2075-0" if $itemid::str == "100012"
+          else "LOINC/34728-6" if $itemid::str == "100013"
+          else "LOINC/777-3" if $itemid::str == "100014"
+          else "LOINC/2777-1" if $itemid::str == "100015"
+          else "LOINC/6690-2" if $itemid::str == "100016"
+          else "LOINC/787-2" if $itemid::str == "100017"
+          else "LOINC/786-4" if $itemid::str == "100018"
+          else "LOINC/789-8" if $itemid::str == "100019"
+          else "LOINC/1975-2" if $itemid::str == "100020"
+          else "LOINC/1751-7" if $itemid::str == "100021"
+          else "LOINC/770-8" if $itemid::str == "100022"
+          else "LOINC/736-9" if $itemid::str == "100023"
+          else "LOINC/713-8" if $itemid::str == "100024"
+          else "LOINC/706-2" if $itemid::str == "100025"
+          else "LOINC/3150-0" if $itemid::str == "100029"
+          else "LOINC/6301-6" if $itemid::str == "100030"
+          else "LOINC/32693-4" if $itemid::str == "100031"
+          else "LOINC/1920-8" if $itemid::str == "100032"
+          else "LOINC/6768-6" if $itemid::str == "100033"
+          else "LOINC/5902-2" if $itemid::str == "100034"
+          else "LOINC/1742-6" if $itemid::str == "100042"
+          else "LOINC/1994-3" if $itemid::str == "100044"
+          else "LOINC/14979-9" if $itemid::str == "100046"
+          else "LOINC/3255-7" if $itemid::str == "100048"
+          else "LOINC/1968-7" if $itemid::str == "100049"
+          else "LOINC/1988-5" if $itemid::str == "100053"
+          else "LOINC/6598-7" if $itemid::str == "100057"
+          else "LOINC/11558-4" if $itemid::str == "100064"
+          else "LOINC/4548-4" if $itemid::str == "100079"
+          else "LOINC/2157-6" if $itemid::str == "100085"
+          else "LOINC/13969-1" if $itemid::str == "100099"
+          else "LOINC/20564-1" if $itemid::str == "100109"
+          else "LOINC/2614-6" if $itemid::str == "100145"
+          else "LOINC/713-8" if $itemid::str == "100194"
+          else "LOINC/706-2" if $itemid::str == "100222"
 
 data/nw_hosp/patients:
   _table:
@@ -103,15 +201,35 @@ data/nw_hosp/patients:
     cols:
       dod_final: $deathtime ?? $dod
       year_of_birth: ($anchor_year - $anchor_age)::str
+      # Constant code columns, so the literal MEDS codes can be described (see admissions).
+      _code_birth: '"MEDS_BIRTH"'
+      _code_death: '"MEDS_DEATH"'
   gender:
     code: 'f"GENDER//{$gender ?? ''UNK''}"'
     time: null
+    _metadata:
+      _self:
+        description: >-
+          f"Patient sex: {$gender ?? 'UNK'} (NWICU patients.gender)"
   dob:
-    code: MEDS_BIRTH
+    code: $_code_birth
     time: $year_of_birth::?"%Y"
+    _metadata:
+      _self:
+        description: >-
+          "Birth (MEDS birth code). NWICU records no birth date: the time is January 1 of
+          patients.anchor_year minus patients.anchor_age, an approximate birth year"
+  # MEDS_DEATH is also emitted by `death_untimed` in admissions; that event carries no
+  # `_metadata`, so this description is the code's only one (one code, one code template).
   death:
-    code: MEDS_DEATH
+    code: $_code_death
     time: coalesce($dod_final::?"%Y-%m-%d %H:%M:%S", $dod_final::?"%Y-%m-%d")
+    _metadata:
+      _self:
+        description: >-
+          "Death (MEDS death code). Time: the subject's earliest NWICU admissions.deathtime, else
+          patients.dod; for a discharge to a location starting EXPIRED without a deathtime, the
+          admissions.dischtime"
 
 data/nw_hosp/prescriptions:
   _table:
@@ -134,12 +252,21 @@ data/nw_hosp/prescriptions:
     pharmacy_id: $pharmacy_id
     _metadata:
       _self:
+        description: >-
+          f"Prescription start: {$drug}; route: {$route ?? 'UNK'}; dose unit: {$dose_unit_rx ?? 'UNK'}
+          (NWICU prescriptions.drug, route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
         parent_codes: 'f"NDC/{$_ndc_real}" if $_ndc_real == $_ndc_real'
   prescription_stop:
     code: f"MEDICATION//STOP//{$drug}//{$route ?? 'UNK'}"
     time: $stoptime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
     pharmacy_id: $pharmacy_id
+    _metadata:
+      _self:
+        description: >-
+          f"Prescription stop: {$drug}; route: {$route ?? 'UNK'} (NWICU prescriptions.drug, route)"
+        # The same NDC parents as the matching start code.
+        parent_codes: 'f"NDC/{$_ndc_real}" if $_ndc_real == $_ndc_real'
 
 data/nw_icu/icustays:
   icu_admission:
@@ -147,11 +274,21 @@ data/nw_icu/icustays:
     time: $intime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
     icustay_id: $stay_id
+    _metadata:
+      _self:
+        description: >-
+          f"ICU stay start (transfer into the ICU); first care unit: {$first_careunit ?? 'UNK'} (NWICU
+          icustays.first_careunit)"
   icu_discharge:
     code: 'f"ICU_DISCHARGE//{$last_careunit ?? ''UNK''}"'
     time: $outtime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
     icustay_id: $stay_id
+    _metadata:
+      _self:
+        description: >-
+          f"ICU stay end (transfer out of the ICU); last care unit: {$last_careunit ?? 'UNK'} (NWICU
+          icustays.last_careunit)"
 
 data/nw_icu/chartevents:
   event:
@@ -165,6 +302,13 @@ data/nw_icu/chartevents:
       data/nw_icu/d_items:
         itemid: $itemid
         description: $label
+        # Inferred LOINC parents, as for labevents above.
+        parent_codes: >-
+          "LOINC/8867-4" if $itemid::str == "320045"
+          else "LOINC/59408-5" if $itemid::str == "320277"
+          else "LOINC/8310-5" if $itemid::str == "323761"
+          else "LOINC/29463-7" if $itemid::str == "326531"
+          else "LOINC/8302-2" if $itemid::str == "326707"
 
 data/nw_icu/procedureevents:
   start:

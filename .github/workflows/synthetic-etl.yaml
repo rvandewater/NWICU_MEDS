@@ -29,3 +29,6 @@ jobs:
           uv pip install https://github.com/rvandewater/MESSY_synth.git
           uv run MESSY_synth ./src/NWICU_MEDS/messy.yaml -o raw_synthetic/ --explain
           uv run meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
+
+      - name: Check the code metadata of the synthetic build
+        run: NWICU_MEDS_OUTPUT_DIR=./nwicu_meds_synth uv run pytest tests/test_code_metadata.py
