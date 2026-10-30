@@ -1,10 +1,9 @@
-"""Code metadata: every code family is described, and the LOINC parent table stays sourced.
+"""Code metadata: every code family is described, and vocabulary links stay out of the ETL.
 
 The config tests need no data. ``test_built_codes_metadata`` checks a finished extraction and runs
 only when ``NWICU_MEDS_OUTPUT_DIR`` points at one (the synthetic-ETL workflow sets it).
 """
 
-import csv
 import os
 import re
 from pathlib import Path
@@ -16,25 +15,16 @@ from meds import CodeMetadataSchema
 
 from NWICU_MEDS import MESSY_CFG
 
-LOINC_CSV = Path(str(MESSY_CFG)).parent / "metadata" / "loinc_parents.csv"
-# The dictionary block of each event whose codes get an inferred LOINC parent, by the CSV's
-# `source_table` value.
-LOINC_BLOCKS = {
-    "labevents": ("data/nw_hosp/labevents", "lab", "data/nw_hosp/d_labitems"),
-    "chartevents": ("data/nw_icu/chartevents", "event", "data/nw_icu/d_items"),
+# The dictionary blocks of the two events that emit `LAB//{itemid}//{unit}` codes.
+LAB_BLOCKS = {
+    "data/nw_hosp/labevents": ("lab", "data/nw_hosp/d_labitems"),
+    "data/nw_icu/chartevents": ("event", "data/nw_icu/d_items"),
 }
-LOINC_BRANCH = re.compile(r'"LOINC/([0-9]{1,5}-[0-9])" if \$itemid::str == "([0-9]+)"')
 
 
 @pytest.fixture(scope="module")
 def raw_cfg() -> dict:
     return yaml.safe_load(Path(str(MESSY_CFG)).read_text())
-
-
-@pytest.fixture(scope="module")
-def loinc_rows() -> list[dict]:
-    with LOINC_CSV.open(newline="") as f:
-        return list(csv.DictReader(f))
 
 
 def _events(raw_cfg: dict):
@@ -70,32 +60,16 @@ def test_every_code_family_is_described(raw_cfg: dict):
     )
 
 
-def test_loinc_table_is_complete_and_sourced(loinc_rows: list[dict]):
-    assert loinc_rows
-    keys = [(r["source_table"], r["itemid"]) for r in loinc_rows]
-    assert len(keys) == len(set(keys))
-    for r in loinc_rows:
-        assert r["source_table"] in LOINC_BLOCKS, r
-        assert re.fullmatch(r"[0-9]+", r["itemid"]), r
-        assert re.fullmatch(r"[0-9]{1,5}-[0-9]", r["loinc_code"]), r
-        # Every parent is a bridge across two curated mappings, so it must say so.
-        assert r["source"].startswith("inferred: weavehr:"), r
-        assert r["source_detail"], r
+def test_lab_codes_get_no_vocabulary_parents_from_the_etl(raw_cfg: dict):
+    """NWICU records no LOINC code; the itemid -> LOINC crosswalk is applied by suMEDS.
 
-
-def test_loinc_expressions_match_the_table(raw_cfg: dict, loinc_rows: list[dict]):
-    for source_table, (prefix, event, dictionary) in LOINC_BLOCKS.items():
-        expr = raw_cfg[prefix][event]["_metadata"][dictionary]["parent_codes"]
-        branches = LOINC_BRANCH.findall(expr)
-        assert len(branches) == expr.count(" if "), (
-            f"unparsed branch in the {prefix} parent_codes"
-        )
-        expected = [
-            (r["loinc_code"], r["itemid"])
-            for r in loinc_rows
-            if r["source_table"] == source_table
-        ]
-        assert branches == expected, prefix
+    The rules are in ``sumeds_rules.yaml`` (crosswalk ``nwicu/loinc_parents``), so the
+    dictionary blocks carry descriptions only.
+    """
+    for prefix, (event, dictionary) in LAB_BLOCKS.items():
+        block = raw_cfg[prefix][event]["_metadata"][dictionary]
+        assert block["description"] == "$label"
+        assert "parent_codes" not in block, prefix
 
 
 @pytest.mark.skipif(

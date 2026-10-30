@@ -145,54 +145,6 @@ data/nw_hosp/labevents:
       data/nw_hosp/d_labitems:
         itemid: $itemid
         description: $label
-        # Inferred LOINC parents, one per row of metadata/loinc_parents.csv (which records the
-        # source of each); null for every other itemid. Keep the two in step: the tests check it.
-        parent_codes: >-
-          "LOINC/2160-0" if $itemid::str == "100002"
-          else "LOINC/17861-6" if $itemid::str == "100003"
-          else "LOINC/3094-0" if $itemid::str == "100004"
-          else "LOINC/785-6" if $itemid::str == "100005"
-          else "LOINC/4544-3" if $itemid::str == "100006"
-          else "LOINC/718-7" if $itemid::str == "100007"
-          else "LOINC/788-0" if $itemid::str == "100008"
-          else "LOINC/19123-9" if $itemid::str == "100009"
-          else "LOINC/2951-2" if $itemid::str == "100010"
-          else "LOINC/2823-3" if $itemid::str == "100011"
-          else "LOINC/2075-0" if $itemid::str == "100012"
-          else "LOINC/34728-6" if $itemid::str == "100013"
-          else "LOINC/777-3" if $itemid::str == "100014"
-          else "LOINC/2777-1" if $itemid::str == "100015"
-          else "LOINC/6690-2" if $itemid::str == "100016"
-          else "LOINC/787-2" if $itemid::str == "100017"
-          else "LOINC/786-4" if $itemid::str == "100018"
-          else "LOINC/789-8" if $itemid::str == "100019"
-          else "LOINC/1975-2" if $itemid::str == "100020"
-          else "LOINC/1751-7" if $itemid::str == "100021"
-          else "LOINC/770-8" if $itemid::str == "100022"
-          else "LOINC/736-9" if $itemid::str == "100023"
-          else "LOINC/713-8" if $itemid::str == "100024"
-          else "LOINC/706-2" if $itemid::str == "100025"
-          else "LOINC/3150-0" if $itemid::str == "100029"
-          else "LOINC/6301-6" if $itemid::str == "100030"
-          else "LOINC/32693-4" if $itemid::str == "100031"
-          else "LOINC/1920-8" if $itemid::str == "100032"
-          else "LOINC/6768-6" if $itemid::str == "100033"
-          else "LOINC/5902-2" if $itemid::str == "100034"
-          else "LOINC/1742-6" if $itemid::str == "100042"
-          else "LOINC/1994-3" if $itemid::str == "100044"
-          else "LOINC/14979-9" if $itemid::str == "100046"
-          else "LOINC/3255-7" if $itemid::str == "100048"
-          else "LOINC/1968-7" if $itemid::str == "100049"
-          else "LOINC/1988-5" if $itemid::str == "100053"
-          else "LOINC/6598-7" if $itemid::str == "100057"
-          else "LOINC/11558-4" if $itemid::str == "100064"
-          else "LOINC/4548-4" if $itemid::str == "100079"
-          else "LOINC/2157-6" if $itemid::str == "100085"
-          else "LOINC/13969-1" if $itemid::str == "100099"
-          else "LOINC/20564-1" if $itemid::str == "100109"
-          else "LOINC/2614-6" if $itemid::str == "100145"
-          else "LOINC/713-8" if $itemid::str == "100194"
-          else "LOINC/706-2" if $itemid::str == "100222"
 
 data/nw_hosp/patients:
   _table:
@@ -302,13 +254,6 @@ data/nw_icu/chartevents:
       data/nw_icu/d_items:
         itemid: $itemid
         description: $label
-        # Inferred LOINC parents, as for labevents above.
-        parent_codes: >-
-          "LOINC/8867-4" if $itemid::str == "320045"
-          else "LOINC/59408-5" if $itemid::str == "320277"
-          else "LOINC/8310-5" if $itemid::str == "323761"
-          else "LOINC/29463-7" if $itemid::str == "326531"
-          else "LOINC/8302-2" if $itemid::str == "326707"
 
 data/nw_icu/procedureevents:
   start:

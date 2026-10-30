@@ -1,0 +1,60 @@
+# suMEDS enrichment rules for NWICU-MEDS (format `sumeds-rules/0.1`, read by suMEDS >= the
+# release with ontology rules; https://github.com/rvandewater/SumMEDS).
+#
+# The ETL writes what NWICU itself records: descriptions from its dictionaries and templates,
+# ICD-9-CM / ICD-10-CM parents for diagnoses (`d_icd_diagnoses`) and NDC parents for
+# prescriptions (`prescriptions.ndc`). Links to external vocabularies that NWICU does not
+# record are applied by suMEDS from its versioned ontology data (sumeds-ontologies, pinned
+# release: crosswalk tables and ontology packs), so this repository does not ship them:
+#
+# - crosswalk `nwicu-lab-loinc`: `LAB//{itemid}//{unit}` (labevents and chartevents) to LOINC
+#   through the crosswalk table `nwicu/loinc_parents`, keyed on the itemid, validated against
+#   the LOINC pack. The lab and chart dictionaries share no itemid, so no filter on the
+#   table's `source_table` is needed.
+# - ontology rules: `GENDER//F` / `GENDER//M` tagged with the OMOP Gender codes, and the
+#   undotted ICD diagnosis codes resolved to the ICD-9-CM / ICD-10-CM packs (dotted code,
+#   `vocabulary_id`, `concept_code`, every pack ancestor).
+# - hierarchy `nwicu-icd-parents-in-dataset`: a diagnosis code of this table whose ICD code is
+#   the nearest pack ancestor of another's becomes its parent.
+#
+#   suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o codes_enriched.parquet \
+#     --rules "$(python -c 'from importlib.resources import files; print(files("NWICU_MEDS") / "sumeds_rules.yaml")')"
+schema: sumeds-rules/0.1
+
+ontology:
+  # NWICU keeps MIMIC-IV's `patients.gender` coding, F/M, the OMOP Gender vocabulary's own
+  # concept codes. Gender has no public pack, so the code is tagged (or validated by Athena
+  # when one is configured).
+  - id: nwicu-gender
+    pattern: "^GENDER//(?P<code>[FM])$"
+    vocabulary: Gender
+    validate: none
+  # `DIAGNOSIS//ICD//{icd_version}//{icd_code}` carries undotted codes; the packs use the OMOP
+  # concept_code format, so the dot is restored (after 4 characters for ICD-9 E codes).
+  - id: nwicu-icd10cm-diagnoses
+    pattern: "^DIAGNOSIS//ICD//10//(?P<code>[A-Z][0-9][0-9A-Z][0-9A-Z]{0,4})$"
+    vocabulary: ICD10CM
+    normalize:
+      - { pattern: "^(...)(.+)$", replace: '\1.\2' }
+  - id: nwicu-icd9cm-diagnoses
+    pattern: "^DIAGNOSIS//ICD//9//(?P<code>[0-9]{3,5}|V[0-9]{2,4}|E[0-9]{3,4})$"
+    vocabulary: ICD9CM
+    normalize:
+      - { pattern: "^(E[0-9]{3})([0-9])$", replace: '\1.\2' }
+      - { pattern: "^([0-9V][0-9]{2})([0-9]{1,2})$", replace: '\1.\2' }
+
+crosswalk:
+  - id: nwicu-lab-loinc
+    pattern: "^LAB//(?P<key>[0-9]+)//"
+    table: nwicu/loinc_parents
+    key_column: itemid
+    code_column: loinc_code
+    vocabulary: LOINC
+    validate: pack
+
+hierarchy:
+  - id: nwicu-icd-parents-in-dataset
+    from_ontology: true
+    rules:
+      - nwicu-icd10cm-diagnoses
+      - nwicu-icd9cm-diagnoses
