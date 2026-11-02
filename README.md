@@ -120,8 +120,8 @@ suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o codes_enriched.parquet \
   --rules "$(python -c 'from importlib.resources import files; print(files("NWICU_MEDS") / "sumeds_rules.yaml")')"
 ```
 
-This needs a suMEDS release with ontology rules (rvandewater/SumMEDS, `ontology-enrichment`).
-The rules add:
+This needs suMEDS 0.4 or later (`pip install "sumeds>=0.4"`), the first release with ontology
+rules. The rules add:
 
 - **LOINC for lab and chart items** (`nwicu-lab-loinc`, a crosswalk): `LAB//{itemid}//{unit}`
     gets `LOINC//<code>` in `parent_codes`, plus `vocabulary_id` and `concept_code`, for the 45

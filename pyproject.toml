@@ -26,6 +26,8 @@ dependencies = ["MEDS-extract[download]>=0.7.0,<0.8"]
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
+# tests/test_sumeds_rules.py loads the packaged rules with suMEDS itself.
+tests = ["pytest", "sumeds>=0.4"]
 local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 
