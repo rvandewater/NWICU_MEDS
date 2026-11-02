@@ -72,7 +72,7 @@ let users call `meds-extract-run spec=<NAME>` directly.
 ## Testing
 
 ```bash
-uv sync
+uv sync --extra tests
 uv run pytest tests/
 uv run pre-commit run --all-files
 ```
@@ -96,7 +96,7 @@ The project uses [uv](https://docs.astral.sh/uv/) for its environment, lockfile,
 build, and commands.
 
 ```bash
-uv sync
+uv sync --extra tests
 uv run pre-commit install
 uv run pre-commit run --all-files
 uv run pytest
@@ -131,7 +131,7 @@ The tag workflow rejects mismatched versions, then publishes the distributions
 to PyPI and creates the GitHub release.
 
 ```bash
-uv sync
+uv sync --extra tests
 uv version --bump patch   # 0.0.12 → 0.0.13
 uv version --bump minor   # 0.0.12 → 0.1.0
 uv version --bump major   # 0.0.12 → 1.0.0
