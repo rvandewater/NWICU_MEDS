@@ -37,7 +37,7 @@ jobs:
         run: |
           sed 's/^    joins:$/    join:/' src/NWICU_MEDS/messy.yaml >messy_0.7.yaml
           uvx --python 3.12 --from git+https://github.com/rvandewater/MESSY_synth.git \
-            MESSY_synth messy_0.7.yaml -o raw_synthetic/ --explain
+            MESSY_synth ./messy_0.7.yaml -o raw_synthetic/ --explain
           uv run --locked meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
 
       - name: Check the code metadata of the synthetic build
