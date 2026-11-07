@@ -20,9 +20,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-# Pure-config ETL: the only runtime dependency is MEDS-Extract itself, which supplies both
-# CLIs (`meds-extract-download`, `meds-extract-run`) and every extraction stage.
-dependencies = ["MEDS-extract[download]>=0.7.0,<0.8"]
+# Pure-config ETL: MEDS-Extract supplies both CLIs (`meds-extract-download`, `meds-extract-run`)
+# and every extraction stage. It is capped below the next minor: MEDS-Extract 0.x minors are
+# breaking (0.8 renamed the MESSY `_table.join` key to `_table.joins`), so raise it deliberately
+# when migrating.
+dependencies = ["MEDS-extract[download]>=0.8.0,<0.9"]
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]

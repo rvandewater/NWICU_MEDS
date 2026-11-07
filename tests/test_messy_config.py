@@ -1,9 +1,9 @@
 """Validate the bundled MESSY config against the installed MEDS-Extract.
 
 These tests need no raw data and no credentials, so they run in CI on every push. They are the
-regression net for the 0.7 migration: a MESSY file that stops parsing (a bad dftly expression, a
-stray 0.6.x key, an `etl:` option MEDS-Extract does not accept) fails here rather than several
-stages into a multi-hour extraction run.
+regression net for MEDS-Extract migrations: a MESSY file that stops parsing (a bad dftly
+expression, a stray 0.6.x key, 0.7's `_table.join` under 0.8, an `etl:` option MEDS-Extract does
+not accept) fails here rather than several stages into a multi-hour extraction run.
 """
 
 import pytest

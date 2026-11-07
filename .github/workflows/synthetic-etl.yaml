@@ -25,10 +25,15 @@ jobs:
         run: uv sync --locked
 
       - name: Generate and extract synthetic data
+        # MESSY_synth reads MEDS-Extract 0.7 configs and requires MEDS-extract<0.8 (and Python >= 3.12),
+        # so it runs in a tool environment of its own, on a copy of the config with 0.7's `_table.join`
+        # key, the only 0.8 syntax the config uses. The ETL then runs with this project's locked
+        # MEDS-Extract 0.8. Drop the copy once MESSY_synth reads 0.8 configs.
         run: |
-          uv pip install https://github.com/rvandewater/MESSY_synth.git
-          uv run MESSY_synth ./src/NWICU_MEDS/messy.yaml -o raw_synthetic/ --explain
-          uv run meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
+          sed 's/^    joins:$/    join:/' src/NWICU_MEDS/messy.yaml >messy_0.7.yaml
+          uvx --python 3.12 --from git+https://github.com/rvandewater/MESSY_synth.git \
+            MESSY_synth messy_0.7.yaml -o raw_synthetic/ --explain
+          uv run --locked meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
 
       - name: Check the code metadata of the synthetic build
-        run: NWICU_MEDS_OUTPUT_DIR=./nwicu_meds_synth uv run pytest tests/test_code_metadata.py
+        run: NWICU_MEDS_OUTPUT_DIR=./nwicu_meds_synth uv run --locked pytest tests/test_code_metadata.py

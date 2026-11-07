@@ -43,13 +43,13 @@ meds-extract-run spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR out
 
 Everything the old `pre_MEDS.py` did is now config:
 
-| Was                                                 | Now                                                                               |
-| --------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `fix_static_data` — earliest death time per subject | `_table.join` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
-| DOB from `anchor_year - anchor_age`                 | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str`                 |
-| `add_discharge_time_by_hadm_id`                     | `_table.join` on `hadm_id` for `dischtime`                                        |
-| `add_icd_diagnosis_dot`                             | inlined into the diagnosis `parent_codes` expression                              |
-| Post-hoc `codes.parquet` rebuild                    | `_metadata` blocks against NWICU's own `d_labitems` / `d_items`                   |
+| Was                                                 | Now                                                                                |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `fix_static_data` — earliest death time per subject | `_table.joins` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
+| DOB from `anchor_year - anchor_age`                 | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str`                  |
+| `add_discharge_time_by_hadm_id`                     | `_table.joins` on `hadm_id` for `dischtime`                                        |
+| `add_icd_diagnosis_dot`                             | inlined into the diagnosis `parent_codes` expression                               |
+| Post-hoc `codes.parquet` rebuild                    | `_metadata` blocks against NWICU's own `d_labitems` / `d_items`                    |
 
 ### Demographics
 
@@ -59,7 +59,7 @@ annotations on the admission, so each is emitted as its own event — `INSURANCE
 no separate timestamp for them.
 
 Their nulls are deliberately **not** coalesced to `UNK`, unlike the composite codes elsewhere in
-this config. A null code component drops the row under MEDS-Extract 0.7, so a missing
+this config. A null code component drops the row under MEDS-Extract (since 0.7), so a missing
 demographic produces no event at all rather than minting a `RACE//UNK` code that would read as
 an observed category.
 
