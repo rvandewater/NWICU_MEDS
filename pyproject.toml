@@ -20,14 +20,22 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-# Pure-config ETL: the only runtime dependency is MEDS-Extract itself, which supplies both
-# CLIs (`meds-extract-download`, `meds-extract-run`) and every extraction stage.
-dependencies = ["MEDS-extract[download]>=0.7.0,<0.8"]
+# Pure-config ETL: MEDS-Extract supplies both CLIs (`meds-extract-download`, `meds-extract-run`)
+# and every extraction stage. It is capped below the next minor: MEDS-Extract 0.x minors are
+# breaking (0.8 renamed the MESSY `_table.join` key to `_table.joins`), so raise it deliberately
+# when migrating. suMEDS provides `suMEDS-extract`, which runs this ETL and then enriches its code
+# metadata with the rules registered below, and `suMEDS-enrich` for an existing build; 0.6.1 is
+# the first release whose `suMEDS-extract` soft-fails enrichment (a site without internet still
+# gets its ETL) and records in `metadata/dataset.json` whether the build was enriched. It is
+# capped below the next minor for the same reason (its rules format and CLI are still 0.x).
+dependencies = [
+  "MEDS-extract[download]>=0.8.0,<0.9",
+  "sumeds>=0.6.1,<0.7",
+]
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
-# tests/test_sumeds_rules.py loads the packaged rules with suMEDS itself.
-tests = ["pytest", "sumeds>=0.4"]
+tests = ["pytest"]
 local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 
@@ -42,6 +50,15 @@ docs = [
 [project.entry-points."MEDS_extract.pipelines"]
 NWICU = "NWICU_MEDS:messy.yaml"
 
+# Registers the suMEDS rules under the same name, so `suMEDS-extract spec=NWICU` and
+# `--rules NWICU` find them.
+[project.entry-points."sumeds.rules"]
+NWICU = "NWICU_MEDS:sumeds_rules.yaml"
+
 [project.urls]
 Homepage = "https://github.com/rvandewater/NWICU_MEDS"
 Issues = "https://github.com/rvandewater/NWICU_MEDS/issues"
+
+[tool.setuptools.package-data]
+# Ship the MESSY config and the suMEDS rules with the code.
+NWICU_MEDS = ["messy.yaml", "sumeds_rules.yaml"]

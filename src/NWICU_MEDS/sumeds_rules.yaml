@@ -1,5 +1,8 @@
-# suMEDS enrichment rules for NWICU-MEDS (format `sumeds-rules/0.1`, read by suMEDS >= the
-# release with ontology rules; https://github.com/rvandewater/SumMEDS).
+# suMEDS enrichment rules for NWICU-MEDS (format `sumeds-rules/0.1`, read by suMEDS >= 0.4;
+# https://github.com/rvandewater/SumMEDS). pyproject.toml registers them in suMEDS's `sumeds.rules`
+# entry-point group under `NWICU`, the name of the MEDS-Extract spec, so
+# `suMEDS-extract spec=NWICU output_dir=...` runs the ETL and then applies them to
+# `metadata/codes.parquet`, and `--rules NWICU` names them for any suMEDS command.
 #
 # The ETL writes what NWICU itself records: descriptions from its dictionaries and templates,
 # ICD-9-CM / ICD-10-CM parents for diagnoses (`d_icd_diagnoses`) and NDC parents for
@@ -17,8 +20,9 @@
 # - hierarchy `nwicu-icd-parents-in-dataset`: a diagnosis code of this table whose ICD code is
 #   the nearest pack ancestor of another's becomes its parent.
 #
-#   suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o codes_enriched.parquet \
-#     --rules "$(python -c 'from importlib.resources import files; print(files("NWICU_MEDS") / "sumeds_rules.yaml")')"
+# To enrich an existing build in place:
+#
+#   suMEDS-enrich "$OUT/metadata/codes.parquet" -o "$OUT/metadata/codes.parquet" --rules NWICU
 schema: sumeds-rules/0.1
 
 ontology:
