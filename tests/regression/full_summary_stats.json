@@ -1,0 +1,1192 @@
+{
+  "code_metadata": {
+    "description_length": {
+      "mean": 115.494,
+      "n": 27463,
+      "quantiles": {
+        "p1": 10.0,
+        "p25": 68.0,
+        "p5": 22.0,
+        "p50": 139.0,
+        "p75": 158.0,
+        "p95": 187.0,
+        "p99": 205.0
+      },
+      "std": 54.0257
+    },
+    "n_codes": 27463,
+    "n_data_codes_missing_from_metadata": 0,
+    "n_metadata_codes_absent_from_data": 0,
+    "n_with_description": 27463,
+    "n_with_parent_codes": 13375,
+    "ontology": {
+      "by_vocabulary": {
+        "ICD10CM": {
+          "keys_digest": "sha256:81510b7d17311f149e1b5c69acdf263dfda8fe0ddf61961661287be07f2d9014",
+          "n_child_codes": 8086,
+          "n_distinct_keys": 8086,
+          "n_measurements": 313070,
+          "n_subjects": 25786,
+          "recognized": true
+        },
+        "NDC": {
+          "keys_digest": "sha256:b2879aa54de761608f3facb070657f92ea65fce860719e0edd7ebf0767fbb613",
+          "n_child_codes": 5289,
+          "n_distinct_keys": 2391,
+          "n_measurements": 3164458,
+          "n_subjects": 24856,
+          "numeric": {
+            "mean": 725.054,
+            "n_finite": 1455477,
+            "std": 13793.7
+          },
+          "recognized": true
+        }
+      },
+      "coverage": {
+        "frac_measurements_mapped": 0.0681619,
+        "frac_observed_codes_with_parents": 0.487019,
+        "n_measurements_mapped": 3477528,
+        "n_measurements_unmapped": 47541088,
+        "n_observed_codes": 27463,
+        "n_observed_codes_with_parents": 13375,
+        "n_observed_codes_without_parents": 14088
+      },
+      "n_codes_in_multiple_vocabularies": 0,
+      "n_codes_with_parents": 13375,
+      "n_distinct_parents": 10477,
+      "n_parent_links": 13377,
+      "n_parents_without_vocabulary": 0,
+      "n_vocabularies": 2,
+      "n_vocabularies_recognized": 2,
+      "parents_per_code": {
+        "mean": 0.487092,
+        "n": 27463,
+        "quantiles": {
+          "p1": 0.0,
+          "p25": 0.0,
+          "p5": 0.0,
+          "p50": 0.0,
+          "p75": 1.0,
+          "p95": 1.0,
+          "p99": 1.0
+        },
+        "std": 0.499988
+      },
+      "present": true,
+      "vocabularies_per_code": {
+        "mean": 0.487019,
+        "n": 27463,
+        "quantiles": {
+          "p1": 0.0,
+          "p25": 0.0,
+          "p5": 0.0,
+          "p50": 0.0,
+          "p75": 1.0,
+          "p95": 1.0,
+          "p99": 1.0
+        },
+        "std": 0.499841
+      }
+    },
+    "present": true,
+    "vocabulary_digest": "sha256:adb0af37e701d161aab009a0fd96294e9c162a2bd37b492ee142e1ec733fe9ea"
+  },
+  "codes": {
+    "concentration": {
+      "frac_measurements_in_top_10": 0.217539,
+      "frac_measurements_in_top_100": 0.56337,
+      "frac_measurements_in_top_1000": 0.8716,
+      "n_codes_covering_50pct": 67,
+      "n_codes_covering_90pct": 1319,
+      "n_codes_covering_99pct": 6316
+    },
+    "digests": {
+      "alphabetical": "sha256:adb0af37e701d161aab009a0fd96294e9c162a2bd37b492ee142e1ec733fe9ea",
+      "by_measurement_frequency": "sha256:0f2fd13fa735ad1d659cbd3af2767b7b6435695978e71dc427390aaa749b1a68",
+      "by_subject_frequency": "sha256:56db64bd0c1ae992a077ed4c7f7659c7a75e9bae6f6e019068b77dbfc60d4b86",
+      "numeric_moments": {
+        "digest": "sha256:620dbc1a49fc635787415c7cd85a9a555a37704c62cef036f6f431ddd2ace6c3",
+        "n_codes": 1955
+      },
+      "thresholded": {
+        "100": {
+          "alphabetical": "sha256:6babac315a3a8295c37b75000820b9bcd615bdd1a0e1ebbb67a517ae7199084d",
+          "by_measurement_frequency": "sha256:75ca0d98d88725adb2ff937575ca118b90670e1a91b6f78b5dc7941b3cac28b3",
+          "by_subject_frequency": "sha256:e63dbb690741b1a5d7234e52ec157f84f96218f114e3d8d945f1c4e27e8f2e32",
+          "n_codes": 5094
+        },
+        "1000": {
+          "alphabetical": "sha256:60d5d843d55d66c53455a80d9244a50108f22b768b8826624e8570a4105dab4f",
+          "by_measurement_frequency": "sha256:a243878b835e312b09767cdf9ca08a51bad12bd4de777b722fc5608803fc4ffc",
+          "by_subject_frequency": "sha256:0380b4141a3c129e9c55eed902509f42478ea1a868a4fc092a27324b42d01240",
+          "n_codes": 1259
+        },
+        "20": {
+          "alphabetical": "sha256:99f29d516862dd5fb21c8767550155fca4f1a49ef12db8c336f9751df3a85a6f",
+          "by_measurement_frequency": "sha256:5f4e4441f6f67e72fac0a5fc254843f717d696d3104e53aed77954d380b96f09",
+          "by_subject_frequency": "sha256:0697a6241604d6c2c3acc4ba8f5197bb9818d4618910b72515fdd184194c8c5b",
+          "n_codes": 9724
+        }
+      }
+    },
+    "n_codes_below_min_cell_size": 17739,
+    "n_unique_codes": 27463,
+    "occurrence": {
+      "n_measurements": {
+        "mean": 1857.72,
+        "n": 27463,
+        "quantiles": {
+          "p1": 1.0,
+          "p25": 2.0,
+          "p5": 1.0,
+          "p50": 14.0,
+          "p75": 146.0,
+          "p95": 3436.5,
+          "p99": 26448.8
+        },
+        "std": 26712.8
+      },
+      "n_subjects": {
+        "mean": 232.93,
+        "n": 27463,
+        "quantiles": {
+          "p1": 1.0,
+          "p25": 2.0,
+          "p5": 1.0,
+          "p50": 6.0,
+          "p75": 51.0,
+          "p95": 885.0,
+          "p99": 4861.0
+        },
+        "std": 1188.99
+      }
+    }
+  },
+  "config": {
+    "code_metadata_only_digests": true,
+    "dataset_digest": "files",
+    "digest_subject_thresholds": [
+      20,
+      100,
+      1000
+    ],
+    "emit_ontology_keys": false,
+    "min_cell_size": 20,
+    "min_numeric_cell_size": 20,
+    "moment_digest_sig_digits": 6,
+    "numeric_detail": "moments",
+    "quantiles": [
+      0.01,
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95,
+      0.99
+    ]
+  },
+  "counts": {
+    "n_events": 17014114,
+    "n_measurements": 51018616,
+    "n_static_measurements": 25923,
+    "n_subjects": 25923,
+    "n_subjects_with_birth": 25923,
+    "n_subjects_with_death": 5213,
+    "n_subjects_with_static": 25923,
+    "n_unique_codes": 27463,
+    "numeric": {
+      "mean": 77937.0,
+      "n_finite": 27939632,
+      "n_infinite": 0,
+      "n_nan": 0,
+      "n_negative": 140,
+      "n_present": 27939632,
+      "n_zero": 695410,
+      "std": 878710.0
+    },
+    "quality": {
+      "n_empty_code": 0,
+      "n_null_code": 0,
+      "n_null_subject_id": 0
+    }
+  },
+  "dataset": {
+    "created_at": "2026-11-04T15:24:13.700500+00:00",
+    "dataset_name": "NWICU",
+    "dataset_version": "0.1.0:1.0.0",
+    "etl_name": "MEDS_transforms",
+    "etl_version": "0.7.0",
+    "meds_version": "0.4.1",
+    "present": true
+  },
+  "dataset_digest": {
+    "by_file": {
+      "data/held_out/0.parquet": "sha256:5eb37e12d0f91a00a11063ea0a527411cf38cc2486a34a358014f3f215f4ff47",
+      "data/held_out/1.parquet": "sha256:cd66c42c11057a1fdbdbc96d73249f4c389b79e3a573506e564096fbd2a9498d",
+      "data/held_out/2.parquet": "sha256:cccd901b02bf707dbc0a1a5d90e64a24e5cd9b9d866732590be15a2598b68a94",
+      "data/train/0.parquet": "sha256:0bcb2ba01fcde056d459b8710865763cc1d1dd4499fb68e7c95a7d7917bd296b",
+      "data/train/1.parquet": "sha256:7c212d62f4afaa81171c6a13fc384338515fd419924a97c2ae05a6842f4453d0",
+      "data/train/10.parquet": "sha256:09a828470598083ec1b9752c1f102ee15f0f35b8c3dbaec02190d5c05f2f6f86",
+      "data/train/11.parquet": "sha256:8a525092eb3e59a46ca101b96edb23640ad9490fb2e86177af74f0065a89b9eb",
+      "data/train/12.parquet": "sha256:3f8c304d163a47b7d3350377959d8939493b542e770d9baf38b30dbeaa14ca8a",
+      "data/train/13.parquet": "sha256:a4808d0ffba9657ac86c571f6b07c1670df657e4a5299a8e1be8a97ae603a0b4",
+      "data/train/14.parquet": "sha256:9ef51d267493004933d758625c9f2096793407baa7606e219dd81071934e55c6",
+      "data/train/15.parquet": "sha256:dd32f3e917163147f28d4ce13b2ffd3da51a23ca2ee7abdce72d2cb2656d3011",
+      "data/train/16.parquet": "sha256:b4cbe9c77997c5249ca6374163fe2fc161e176e314a3d302cca6b57ee83f6b5b",
+      "data/train/17.parquet": "sha256:23533a080fbbc7cfe7bfc56d6606563cad838e988cf98eab0f08b3dc5eda0fc7",
+      "data/train/18.parquet": "sha256:ade9ee7560c5f6d1dae1518eebd9a34df3ff368e121e7f0706b37b2f0df23fec",
+      "data/train/19.parquet": "sha256:76836b6c01c9b58b953927f74c337559ee050b5088322a0f2e8ea28510aae11f",
+      "data/train/2.parquet": "sha256:83d2b29b7f2800c81ce2983d35ce4050a54679f77cba5232a6f3df8dcd956a02",
+      "data/train/20.parquet": "sha256:fc9e753817411ab5d89118b5174e2a9f518fce1322d8be2f57fb3282a90bfef9",
+      "data/train/3.parquet": "sha256:b6c06283b72e7ffe6b8ba0c05478d04c197b5dda840889c5c622e7667fd07d74",
+      "data/train/4.parquet": "sha256:6511a9b1071da326bc3fc05f5c4b972ea546f3cade00eab17653f7cef6f9be12",
+      "data/train/5.parquet": "sha256:1c4a293aa8f25d6e526cbf838433c657e8e95f0444a5ecd4e08be878b9a8f686",
+      "data/train/6.parquet": "sha256:f049182d45af23cc287f31788cce9f3b7198ccf4255d0685e16233134aeae692",
+      "data/train/7.parquet": "sha256:14373253ab066c96150d92085eef8ab93f4b50f66c2b5fa7c1e4573e6386e1ed",
+      "data/train/8.parquet": "sha256:89b1cc190ad3d10790157547b62167acf36d34863040174b5acd10f8da99c792",
+      "data/train/9.parquet": "sha256:5a8e67c2d0c28f9321e53356392804ddcfdb143b2b5107461d1fc61f4a87d377",
+      "data/tuning/0.parquet": "sha256:29165a6a760bfc03b9e2cfcd68ddb6e949219db4c1403b7872abf84b6e5beafe",
+      "data/tuning/1.parquet": "sha256:6ea008ca8badf6ce910815b747b1a36128a956798ea5688cd3248870f2367768",
+      "data/tuning/2.parquet": "sha256:e2e658f8e73bd0f674c5c6bfbbad2fcd3da93888f87150df6df4a4cebc9c9c6b",
+      "metadata/codes.parquet": "sha256:a6c09afdee658e6c1eb3ecd509c35d665176bc3c3718f913f26e86e600c66468",
+      "metadata/dataset.json": "sha256:b79562172c38c5265b4d0c9daad7db61834d06ca1dea7ea27ec9fad5fa82ebce",
+      "metadata/subject_splits.parquet": "sha256:8231b5dd5037ebb844165536872469ff61c2f91589ef33590136b967aef49f08"
+    },
+    "code_metadata": "sha256:0d2504363321153cda5ea1be65a46b56de444192c061d07840f5933f3f8f3415",
+    "combined": "sha256:fcca3961fa571c0e1c82cd482e8cc7d65f6b9d3ed65d14786b35cf9a27d3786d",
+    "data": {
+      "digest": "sha256:90ea73be91aa2c842f7d9744d5e1b76f3d26ac448801a76ae57479ea9dee3dae",
+      "n_files": 27
+    },
+    "dataset_metadata": "sha256:1c21199752f184aab94d84c43f93ee8ed4a3ac36eb6ef1a23575d5f853f68a7e",
+    "method": "files",
+    "n_files": 30,
+    "subject_splits": "sha256:89a8e11536b5531b7854187c3437ce68cd82440bfbf43f5c1e33281b5f015ff6"
+  },
+  "extracted_at": "2026-11-04T22:17:15.529622",
+  "layout": {
+    "code_metadata_columns": {
+      "code": "String",
+      "code_template": "String",
+      "description": "String",
+      "parent_codes": "List(String)"
+    },
+    "column_dtype_conflicts": {},
+    "column_presence": {
+      "code": 27,
+      "emar_id": 27,
+      "emar_seq": 27,
+      "hadm_id": 27,
+      "icustay_id": 27,
+      "numeric_value": 27,
+      "pharmacy_id": 27,
+      "priority": 27,
+      "source_block": 27,
+      "subject_id": 27,
+      "text_value": 27,
+      "time": 27
+    },
+    "data_columns": {
+      "code": "String",
+      "emar_id": "String",
+      "emar_seq": "Int64",
+      "hadm_id": "Int64",
+      "icustay_id": "Int64",
+      "numeric_value": "Float32",
+      "pharmacy_id": "Int64",
+      "priority": "String",
+      "source_block": "String",
+      "subject_id": "Int64",
+      "text_value": "String",
+      "time": "Datetime(time_unit='us', time_zone=None)"
+    },
+    "extra_data_columns": [
+      "emar_id",
+      "emar_seq",
+      "hadm_id",
+      "icustay_id",
+      "pharmacy_id",
+      "priority",
+      "source_block",
+      "text_value"
+    ],
+    "has_code_metadata": true,
+    "has_dataset_metadata": true,
+    "has_subject_splits": true,
+    "missing_core_columns": [],
+    "n_data_shards": 27,
+    "shard_names": [
+      "held_out/0",
+      "held_out/1",
+      "held_out/2",
+      "train/0",
+      "train/1",
+      "train/10",
+      "train/11",
+      "train/12",
+      "train/13",
+      "train/14",
+      "train/15",
+      "train/16",
+      "train/17",
+      "train/18",
+      "train/19",
+      "train/2",
+      "train/20",
+      "train/3",
+      "train/4",
+      "train/5",
+      "train/6",
+      "train/7",
+      "train/8",
+      "train/9",
+      "tuning/0",
+      "tuning/1",
+      "tuning/2"
+    ],
+    "shard_names_digest": "sha256:5ea6285488aee8a3d4eeec7ae9886a2386978a43bb760bc823fbaee9f1587d21"
+  },
+  "meds_summary_stats_version": "0.0.3",
+  "per_subject": {
+    "n_events": {
+      "mean": 656.333,
+      "n": 25923,
+      "quantiles": {
+        "p1": 29.0,
+        "p25": 191.0,
+        "p5": 67.0,
+        "p50": 390.0,
+        "p75": 788.0,
+        "p95": 2116.9,
+        "p99": 4055.0
+      },
+      "std": 844.419
+    },
+    "n_measurements": {
+      "mean": 1968.08,
+      "n": 25923,
+      "quantiles": {
+        "p1": 130.0,
+        "p25": 600.0,
+        "p5": 240.0,
+        "p50": 1178.0,
+        "p75": 2333.0,
+        "p95": 6347.9,
+        "p99": 12100.3
+      },
+      "std": 2474.14
+    },
+    "n_unique_codes": {
+      "mean": 246.768,
+      "n": 25923,
+      "quantiles": {
+        "p1": 56.0,
+        "p25": 149.0,
+        "p5": 82.0,
+        "p50": 217.0,
+        "p75": 312.0,
+        "p95": 509.0,
+        "p99": 691.78
+      },
+      "std": 136.507
+    },
+    "span_days": {
+      "mean": 23205.0,
+      "n": 25923,
+      "quantiles": {
+        "p1": 7804.08,
+        "p25": 19450.4,
+        "p5": 11112.4,
+        "p50": 24086.9,
+        "p75": 27797.6,
+        "p95": 32220.0,
+        "p99": 33599.6
+      },
+      "std": 6200.81
+    }
+  },
+  "splits": {
+    "by_split": {
+      "held_out": {
+        "n_measurements": 4859080,
+        "n_subjects": 2593
+      },
+      "train": {
+        "n_measurements": 40945410,
+        "n_subjects": 20738
+      },
+      "tuning": {
+        "n_measurements": 5214126,
+        "n_subjects": 2592
+      }
+    },
+    "n_splits": 3,
+    "n_subjects_in_data_without_split": 0,
+    "n_subjects_in_splits_without_data": 0,
+    "present": true
+  },
+  "stats_schema_version": 1,
+  "time": {
+    "by_year": {
+      "2013": {
+        "n_measurements": 21,
+        "n_subjects": 21
+      },
+      "2014": {
+        "n_measurements": 23,
+        "n_subjects": 23
+      },
+      "2015": {
+        "n_measurements": 26,
+        "n_subjects": 26
+      },
+      "2016": {
+        "n_measurements": 21,
+        "n_subjects": 21
+      },
+      "2017": {
+        "n_measurements": 34,
+        "n_subjects": 34
+      },
+      "2018": {
+        "n_measurements": 38,
+        "n_subjects": 38
+      },
+      "2019": {
+        "n_measurements": 37,
+        "n_subjects": 37
+      },
+      "2020": {
+        "n_measurements": 34,
+        "n_subjects": 34
+      },
+      "2021": {
+        "n_measurements": 54,
+        "n_subjects": 54
+      },
+      "2022": {
+        "n_measurements": 55,
+        "n_subjects": 55
+      },
+      "2023": {
+        "n_measurements": 53,
+        "n_subjects": 53
+      },
+      "2024": {
+        "n_measurements": 73,
+        "n_subjects": 73
+      },
+      "2025": {
+        "n_measurements": 67,
+        "n_subjects": 67
+      },
+      "2026": {
+        "n_measurements": 80,
+        "n_subjects": 80
+      },
+      "2027": {
+        "n_measurements": 83,
+        "n_subjects": 83
+      },
+      "2028": {
+        "n_measurements": 91,
+        "n_subjects": 91
+      },
+      "2029": {
+        "n_measurements": 98,
+        "n_subjects": 98
+      },
+      "2030": {
+        "n_measurements": 79,
+        "n_subjects": 79
+      },
+      "2031": {
+        "n_measurements": 125,
+        "n_subjects": 125
+      },
+      "2032": {
+        "n_measurements": 102,
+        "n_subjects": 102
+      },
+      "2033": {
+        "n_measurements": 112,
+        "n_subjects": 112
+      },
+      "2034": {
+        "n_measurements": 118,
+        "n_subjects": 118
+      },
+      "2035": {
+        "n_measurements": 138,
+        "n_subjects": 138
+      },
+      "2036": {
+        "n_measurements": 118,
+        "n_subjects": 118
+      },
+      "2037": {
+        "n_measurements": 143,
+        "n_subjects": 143
+      },
+      "2038": {
+        "n_measurements": 169,
+        "n_subjects": 169
+      },
+      "2039": {
+        "n_measurements": 170,
+        "n_subjects": 170
+      },
+      "2040": {
+        "n_measurements": 154,
+        "n_subjects": 154
+      },
+      "2041": {
+        "n_measurements": 175,
+        "n_subjects": 175
+      },
+      "2042": {
+        "n_measurements": 176,
+        "n_subjects": 176
+      },
+      "2043": {
+        "n_measurements": 170,
+        "n_subjects": 170
+      },
+      "2044": {
+        "n_measurements": 185,
+        "n_subjects": 185
+      },
+      "2045": {
+        "n_measurements": 199,
+        "n_subjects": 199
+      },
+      "2046": {
+        "n_measurements": 196,
+        "n_subjects": 196
+      },
+      "2047": {
+        "n_measurements": 174,
+        "n_subjects": 174
+      },
+      "2048": {
+        "n_measurements": 197,
+        "n_subjects": 197
+      },
+      "2049": {
+        "n_measurements": 191,
+        "n_subjects": 191
+      },
+      "2050": {
+        "n_measurements": 196,
+        "n_subjects": 196
+      },
+      "2051": {
+        "n_measurements": 188,
+        "n_subjects": 188
+      },
+      "2052": {
+        "n_measurements": 219,
+        "n_subjects": 219
+      },
+      "2053": {
+        "n_measurements": 211,
+        "n_subjects": 211
+      },
+      "2054": {
+        "n_measurements": 212,
+        "n_subjects": 212
+      },
+      "2055": {
+        "n_measurements": 213,
+        "n_subjects": 213
+      },
+      "2056": {
+        "n_measurements": 229,
+        "n_subjects": 229
+      },
+      "2057": {
+        "n_measurements": 229,
+        "n_subjects": 229
+      },
+      "2058": {
+        "n_measurements": 245,
+        "n_subjects": 245
+      },
+      "2059": {
+        "n_measurements": 252,
+        "n_subjects": 252
+      },
+      "2060": {
+        "n_measurements": 213,
+        "n_subjects": 213
+      },
+      "2061": {
+        "n_measurements": 218,
+        "n_subjects": 218
+      },
+      "2062": {
+        "n_measurements": 224,
+        "n_subjects": 224
+      },
+      "2063": {
+        "n_measurements": 234,
+        "n_subjects": 234
+      },
+      "2064": {
+        "n_measurements": 225,
+        "n_subjects": 225
+      },
+      "2065": {
+        "n_measurements": 230,
+        "n_subjects": 230
+      },
+      "2066": {
+        "n_measurements": 248,
+        "n_subjects": 248
+      },
+      "2067": {
+        "n_measurements": 248,
+        "n_subjects": 248
+      },
+      "2068": {
+        "n_measurements": 227,
+        "n_subjects": 227
+      },
+      "2069": {
+        "n_measurements": 249,
+        "n_subjects": 249
+      },
+      "2070": {
+        "n_measurements": 221,
+        "n_subjects": 221
+      },
+      "2071": {
+        "n_measurements": 255,
+        "n_subjects": 255
+      },
+      "2072": {
+        "n_measurements": 254,
+        "n_subjects": 254
+      },
+      "2073": {
+        "n_measurements": 251,
+        "n_subjects": 251
+      },
+      "2074": {
+        "n_measurements": 236,
+        "n_subjects": 236
+      },
+      "2075": {
+        "n_measurements": 233,
+        "n_subjects": 233
+      },
+      "2076": {
+        "n_measurements": 262,
+        "n_subjects": 262
+      },
+      "2077": {
+        "n_measurements": 259,
+        "n_subjects": 259
+      },
+      "2078": {
+        "n_measurements": 240,
+        "n_subjects": 240
+      },
+      "2079": {
+        "n_measurements": 229,
+        "n_subjects": 229
+      },
+      "2080": {
+        "n_measurements": 275,
+        "n_subjects": 275
+      },
+      "2081": {
+        "n_measurements": 261,
+        "n_subjects": 261
+      },
+      "2082": {
+        "n_measurements": 262,
+        "n_subjects": 262
+      },
+      "2083": {
+        "n_measurements": 245,
+        "n_subjects": 245
+      },
+      "2084": {
+        "n_measurements": 247,
+        "n_subjects": 247
+      },
+      "2085": {
+        "n_measurements": 253,
+        "n_subjects": 253
+      },
+      "2086": {
+        "n_measurements": 279,
+        "n_subjects": 279
+      },
+      "2087": {
+        "n_measurements": 273,
+        "n_subjects": 273
+      },
+      "2088": {
+        "n_measurements": 265,
+        "n_subjects": 265
+      },
+      "2089": {
+        "n_measurements": 256,
+        "n_subjects": 256
+      },
+      "2090": {
+        "n_measurements": 280,
+        "n_subjects": 280
+      },
+      "2091": {
+        "n_measurements": 246,
+        "n_subjects": 246
+      },
+      "2092": {
+        "n_measurements": 281,
+        "n_subjects": 281
+      },
+      "2093": {
+        "n_measurements": 274,
+        "n_subjects": 274
+      },
+      "2094": {
+        "n_measurements": 258,
+        "n_subjects": 258
+      },
+      "2095": {
+        "n_measurements": 241,
+        "n_subjects": 241
+      },
+      "2096": {
+        "n_measurements": 238,
+        "n_subjects": 238
+      },
+      "2097": {
+        "n_measurements": 284,
+        "n_subjects": 284
+      },
+      "2098": {
+        "n_measurements": 262,
+        "n_subjects": 262
+      },
+      "2099": {
+        "n_measurements": 243,
+        "n_subjects": 243
+      },
+      "2100": {
+        "n_measurements": 420995,
+        "n_subjects": 542
+      },
+      "2101": {
+        "n_measurements": 531466,
+        "n_subjects": 615
+      },
+      "2102": {
+        "n_measurements": 510940,
+        "n_subjects": 623
+      },
+      "2103": {
+        "n_measurements": 415793,
+        "n_subjects": 607
+      },
+      "2104": {
+        "n_measurements": 515807,
+        "n_subjects": 599
+      },
+      "2105": {
+        "n_measurements": 464706,
+        "n_subjects": 612
+      },
+      "2106": {
+        "n_measurements": 466325,
+        "n_subjects": 605
+      },
+      "2107": {
+        "n_measurements": 519866,
+        "n_subjects": 645
+      },
+      "2108": {
+        "n_measurements": 611646,
+        "n_subjects": 669
+      },
+      "2109": {
+        "n_measurements": 472482,
+        "n_subjects": 598
+      },
+      "2110": {
+        "n_measurements": 503705,
+        "n_subjects": 582
+      },
+      "2111": {
+        "n_measurements": 511050,
+        "n_subjects": 622
+      },
+      "2112": {
+        "n_measurements": 451690,
+        "n_subjects": 585
+      },
+      "2113": {
+        "n_measurements": 490789,
+        "n_subjects": 553
+      },
+      "2114": {
+        "n_measurements": 555641,
+        "n_subjects": 602
+      },
+      "2115": {
+        "n_measurements": 545997,
+        "n_subjects": 555
+      },
+      "2116": {
+        "n_measurements": 457236,
+        "n_subjects": 551
+      },
+      "2117": {
+        "n_measurements": 417371,
+        "n_subjects": 549
+      },
+      "2118": {
+        "n_measurements": 571910,
+        "n_subjects": 569
+      },
+      "2119": {
+        "n_measurements": 521320,
+        "n_subjects": 589
+      },
+      "2120": {
+        "n_measurements": 436839,
+        "n_subjects": 598
+      },
+      "2121": {
+        "n_measurements": 492130,
+        "n_subjects": 581
+      },
+      "2122": {
+        "n_measurements": 572856,
+        "n_subjects": 563
+      },
+      "2123": {
+        "n_measurements": 562621,
+        "n_subjects": 595
+      },
+      "2124": {
+        "n_measurements": 378558,
+        "n_subjects": 521
+      },
+      "2125": {
+        "n_measurements": 505973,
+        "n_subjects": 502
+      },
+      "2126": {
+        "n_measurements": 547481,
+        "n_subjects": 554
+      },
+      "2127": {
+        "n_measurements": 563260,
+        "n_subjects": 573
+      },
+      "2128": {
+        "n_measurements": 470053,
+        "n_subjects": 513
+      },
+      "2129": {
+        "n_measurements": 526224,
+        "n_subjects": 540
+      },
+      "2130": {
+        "n_measurements": 482863,
+        "n_subjects": 491
+      },
+      "2131": {
+        "n_measurements": 480909,
+        "n_subjects": 506
+      },
+      "2132": {
+        "n_measurements": 504269,
+        "n_subjects": 501
+      },
+      "2133": {
+        "n_measurements": 463573,
+        "n_subjects": 433
+      },
+      "2134": {
+        "n_measurements": 505963,
+        "n_subjects": 460
+      },
+      "2135": {
+        "n_measurements": 490281,
+        "n_subjects": 443
+      },
+      "2136": {
+        "n_measurements": 432803,
+        "n_subjects": 442
+      },
+      "2137": {
+        "n_measurements": 460319,
+        "n_subjects": 426
+      },
+      "2138": {
+        "n_measurements": 488154,
+        "n_subjects": 439
+      },
+      "2139": {
+        "n_measurements": 514036,
+        "n_subjects": 495
+      },
+      "2140": {
+        "n_measurements": 514555,
+        "n_subjects": 478
+      },
+      "2141": {
+        "n_measurements": 495875,
+        "n_subjects": 456
+      },
+      "2142": {
+        "n_measurements": 522815,
+        "n_subjects": 456
+      },
+      "2143": {
+        "n_measurements": 487549,
+        "n_subjects": 426
+      },
+      "2144": {
+        "n_measurements": 583820,
+        "n_subjects": 425
+      },
+      "2145": {
+        "n_measurements": 539314,
+        "n_subjects": 405
+      },
+      "2146": {
+        "n_measurements": 480213,
+        "n_subjects": 461
+      },
+      "2147": {
+        "n_measurements": 582364,
+        "n_subjects": 439
+      },
+      "2148": {
+        "n_measurements": 516105,
+        "n_subjects": 398
+      },
+      "2149": {
+        "n_measurements": 459504,
+        "n_subjects": 397
+      },
+      "2150": {
+        "n_measurements": 553691,
+        "n_subjects": 420
+      },
+      "2151": {
+        "n_measurements": 585195,
+        "n_subjects": 399
+      },
+      "2152": {
+        "n_measurements": 536984,
+        "n_subjects": 396
+      },
+      "2153": {
+        "n_measurements": 497007,
+        "n_subjects": 382
+      },
+      "2154": {
+        "n_measurements": 533451,
+        "n_subjects": 412
+      },
+      "2155": {
+        "n_measurements": 579693,
+        "n_subjects": 422
+      },
+      "2156": {
+        "n_measurements": 474295,
+        "n_subjects": 422
+      },
+      "2157": {
+        "n_measurements": 458210,
+        "n_subjects": 387
+      },
+      "2158": {
+        "n_measurements": 571251,
+        "n_subjects": 423
+      },
+      "2159": {
+        "n_measurements": 485300,
+        "n_subjects": 367
+      },
+      "2160": {
+        "n_measurements": 532861,
+        "n_subjects": 381
+      },
+      "2161": {
+        "n_measurements": 435439,
+        "n_subjects": 358
+      },
+      "2162": {
+        "n_measurements": 432331,
+        "n_subjects": 348
+      },
+      "2163": {
+        "n_measurements": 436608,
+        "n_subjects": 341
+      },
+      "2164": {
+        "n_measurements": 544254,
+        "n_subjects": 408
+      },
+      "2165": {
+        "n_measurements": 536072,
+        "n_subjects": 391
+      },
+      "2166": {
+        "n_measurements": 562492,
+        "n_subjects": 371
+      },
+      "2167": {
+        "n_measurements": 485731,
+        "n_subjects": 341
+      },
+      "2168": {
+        "n_measurements": 541850,
+        "n_subjects": 372
+      },
+      "2169": {
+        "n_measurements": 503625,
+        "n_subjects": 339
+      },
+      "2170": {
+        "n_measurements": 470171,
+        "n_subjects": 367
+      },
+      "2171": {
+        "n_measurements": 490200,
+        "n_subjects": 362
+      },
+      "2172": {
+        "n_measurements": 465892,
+        "n_subjects": 310
+      },
+      "2173": {
+        "n_measurements": 464171,
+        "n_subjects": 322
+      },
+      "2174": {
+        "n_measurements": 481167,
+        "n_subjects": 335
+      },
+      "2175": {
+        "n_measurements": 490292,
+        "n_subjects": 339
+      },
+      "2176": {
+        "n_measurements": 600012,
+        "n_subjects": 383
+      },
+      "2177": {
+        "n_measurements": 560898,
+        "n_subjects": 357
+      },
+      "2178": {
+        "n_measurements": 573695,
+        "n_subjects": 391
+      },
+      "2179": {
+        "n_measurements": 559160,
+        "n_subjects": 363
+      },
+      "2180": {
+        "n_measurements": 590848,
+        "n_subjects": 354
+      },
+      "2181": {
+        "n_measurements": 503652,
+        "n_subjects": 382
+      },
+      "2182": {
+        "n_measurements": 511657,
+        "n_subjects": 365
+      },
+      "2183": {
+        "n_measurements": 459443,
+        "n_subjects": 336
+      },
+      "2184": {
+        "n_measurements": 480404,
+        "n_subjects": 344
+      },
+      "2185": {
+        "n_measurements": 428451,
+        "n_subjects": 357
+      },
+      "2186": {
+        "n_measurements": 541307,
+        "n_subjects": 387
+      },
+      "2187": {
+        "n_measurements": 491349,
+        "n_subjects": 344
+      },
+      "2188": {
+        "n_measurements": 543305,
+        "n_subjects": 362
+      },
+      "2189": {
+        "n_measurements": 499228,
+        "n_subjects": 383
+      },
+      "2190": {
+        "n_measurements": 612323,
+        "n_subjects": 374
+      },
+      "2191": {
+        "n_measurements": 544429,
+        "n_subjects": 342
+      },
+      "2192": {
+        "n_measurements": 456623,
+        "n_subjects": 342
+      },
+      "2193": {
+        "n_measurements": 521860,
+        "n_subjects": 326
+      },
+      "2194": {
+        "n_measurements": 500924,
+        "n_subjects": 328
+      },
+      "2195": {
+        "n_measurements": 496460,
+        "n_subjects": 335
+      },
+      "2196": {
+        "n_measurements": 429687,
+        "n_subjects": 341
+      },
+      "2197": {
+        "n_measurements": 545444,
+        "n_subjects": 381
+      },
+      "2198": {
+        "n_measurements": 499757,
+        "n_subjects": 361
+      },
+      "2199": {
+        "n_measurements": 639466,
+        "n_subjects": 398
+      },
+      "2200": {
+        "n_measurements": 202947,
+        "n_subjects": 103
+      },
+      "<suppressed>": {
+        "n_measurements": 16965,
+        "n_years": 5
+      }
+    },
+    "n_measurements_with_time": 50992693,
+    "n_years_observed": 193
+  }
+}
