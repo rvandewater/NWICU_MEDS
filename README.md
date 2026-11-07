@@ -143,12 +143,22 @@ suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR -- --athena-csv /path/to/athena
 suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR -- --offline
 ```
 
-Running it again on an existing output skips the pipeline stages that are already done and
-enriches again. To enrich the `codes.parquet` of an existing build instead:
+Enrichment is on by default and soft-fails: if it cannot run (a server without internet, for
+example), the ETL still succeeds with `metadata/codes.parquet` left exactly as `meds-extract-run`
+writes it, and a warning gives the command to enrich it later. `metadata/dataset.json` says whether
+a build is enriched: `sumeds_enrichment.enriched` is `true` (with the rules, pack source and
+coverage) or `false` (with the error and the `retry` command). To enrich a build afterwards, with
+the rules and options of the default run:
 
 ```bash
-suMEDS-enrich "$OUTPUT_DIR/metadata/codes.parquet" -o "$OUTPUT_DIR/metadata/codes.parquet" --rules NWICU
+suMEDS-enrich $OUTPUT_DIR
+# Air-gapped: from a copy of the sumeds-ontologies packs directory
+suMEDS-enrich $OUTPUT_DIR --ontology-source /path/to/sumeds-ontologies/ontologies --offline
 ```
+
+For the plain, unenriched ETL, run `meds-extract-run` instead of `suMEDS-extract`. To make a failed
+enrichment an error (exit code 1), pass `-- --strict`. Running `suMEDS-extract` again on an existing
+output skips the pipeline stages that are already done and enriches again.
 
 The rules add:
 

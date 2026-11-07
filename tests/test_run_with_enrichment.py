@@ -5,7 +5,8 @@ as its MEDS-Extract spec, so `suMEDS-extract` finds them from `spec=NWICU` alone
 source is a tiny pack repository in suMEDS's `sumeds-ontologies/0.1` layout, built here with
 made-up titles for the synthetic codes of ``conftest.py`` (and their ancestors), plus a synthetic
 `nwicu/loinc_parents` crosswalk table, so the test reads nothing over the network and does not
-depend on the published packs.
+depend on the published packs. Another run points at an empty pack source, which is how a site
+without internet fails: the ETL still succeeds, unenriched, and `suMEDS-enrich` completes it later.
 """
 
 import csv
@@ -19,7 +20,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from conftest import run_command
-from meds import CodeMetadataSchema
+from meds import CodeMetadataSchema, DatasetMetadataSchema
 
 # vocabulary -> release -> code -> parent (None for a top-level code). ICD-10-CM R46.89 is
 # deliberately missing, so DIAGNOSIS//ICD//10//R4689 keeps only what the ETL gave it.
@@ -185,6 +186,13 @@ def enriched_rows(enriched_table: pa.Table) -> dict[str, dict]:
     return {row["code"]: row for row in enriched_table.to_pylist()}
 
 
+def _dataset(output_dir: Path) -> dict:
+    """`dataset.json`, checked to still be valid MEDS dataset metadata."""
+    dataset = json.loads((output_dir / "metadata" / "dataset.json").read_text())
+    DatasetMetadataSchema.validate(dataset)
+    return dataset
+
+
 def _names(row: dict, column: str = "parent_names") -> dict[str, str]:
     return dict(row[column] or [])
 
@@ -292,3 +300,90 @@ def test_codes_without_a_rule_are_left_alone(enriched_rows: dict):
     for code in ("MEDS_BIRTH", "HOSPITAL_DISCHARGE//HOME", "PROCEDURE//START//800002"):
         assert not enriched_rows[code]["parent_codes"], code
         assert enriched_rows[code]["vocabulary_id"] is None, code
+
+
+def test_dataset_json_records_the_enrichment(
+    enriched_output: Path, meds_output: Path, codes: pl.DataFrame, enriched_rows: dict
+):
+    """`metadata/dataset.json` says the build is enriched, with which rules, and what it added."""
+    dataset, plain = _dataset(enriched_output), _dataset(meds_output)
+    assert "sumeds_enrichment" not in plain
+    assert set(dataset) == {*plain, "sumeds_enrichment"}
+    record = dataset["sumeds_enrichment"]
+    assert record["enriched"] is True
+    assert record["rules"] == "NWICU"
+    assert record["ontology_source"] == "local"
+    assert record["athena"] is False
+
+    def filled(rows: list[dict], column: str) -> int:
+        return sum(row.get(column) is not None for row in rows)
+
+    plain_rows, rows = codes.to_dicts(), list(enriched_rows.values())
+    assert record["coverage"] == {
+        "codes": len(rows),
+        "described": [filled(plain_rows, "description"), filled(rows, "description")],
+        "with_parent_codes": [
+            filled(plain_rows, "parent_codes"),
+            filled(rows, "parent_codes"),
+        ],
+    }
+    before, after = record["coverage"]["with_parent_codes"]
+    assert after > before
+
+
+def test_enrichment_soft_fails_and_suMEDS_enrich_completes_it_later(
+    tmp_path: Path,
+    raw_dir: Path,
+    ontology_source: Path,
+    meds_output: Path,
+    enriched_output: Path,
+    enriched_table: pa.Table,
+):
+    """With no usable pack source (as on a site without internet), the ETL still succeeds:
+    `codes.parquet` is left exactly as the plain ETL writes it, `dataset.json` records that it is
+    not enriched and how to retry, and `suMEDS-enrich <OUT>` then gives the same table as a run
+    that enriched directly."""
+    empty_source = tmp_path / "no_packs"
+    empty_source.mkdir()
+    output_dir = tmp_path / "MEDS_cohort"
+    stderr = run_command(
+        [
+            "suMEDS-extract",
+            "spec=NWICU",
+            f"output_dir={output_dir}",
+            "do_download=false",
+            f"input_dir={raw_dir}",
+            "--",
+            "--ontology-source",
+            str(empty_source),
+            "--offline",
+        ]
+    )
+    assert "enrichment failed" in stderr
+    assert f"suMEDS-enrich {output_dir} --ontology-source {empty_source}" in stderr
+
+    codes_path = output_dir / "metadata" / "codes.parquet"
+    plain_codes = meds_output / "metadata" / "codes.parquet"
+    assert codes_path.read_bytes() == plain_codes.read_bytes()
+    record = _dataset(output_dir)["sumeds_enrichment"]
+    assert record["enriched"] is False
+    assert record["rules"] == "NWICU"
+    assert record["error"].startswith("OntologyPackError")
+    assert record["retry"] == "suMEDS-enrich <MEDS_ROOT> --ontology-source <PACKS_DIR>"
+
+    run_command(
+        [
+            "suMEDS-enrich",
+            str(output_dir),
+            "--ontology-source",
+            str(ontology_source),
+            "--offline",
+        ]
+    )
+    record = _dataset(output_dir)["sumeds_enrichment"]
+    direct = _dataset(enriched_output)["sumeds_enrichment"]
+    assert record["enriched"] is True
+    assert {k: v for k, v in record.items() if k != "enriched_at"} == {
+        k: v for k, v in direct.items() if k != "enriched_at"
+    }
+    assert pq.read_table(codes_path).equals(enriched_table)
