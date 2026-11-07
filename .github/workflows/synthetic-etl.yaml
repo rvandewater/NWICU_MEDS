@@ -22,7 +22,12 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --locked
+        run: uv sync --locked --extra tests
+
+      # The config and suMEDS-rules tests, and the offline `suMEDS-extract spec=NWICU` run over the
+      # synthetic release of tests/conftest.py.
+      - name: Run the test suite
+        run: uv run --locked pytest tests/
 
       - name: Generate and extract synthetic data
         # MESSY_synth reads MEDS-Extract 0.7 configs and requires MEDS-extract<0.8 (and Python >= 3.12),

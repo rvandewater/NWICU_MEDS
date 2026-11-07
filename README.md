@@ -16,24 +16,40 @@ Northwestern Medicine (NM) is a network of twelve hospitals located in Chicago a
 
 This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/content/nwicu-northwestern-icu/0.1.0/) into the MEDS format.
 
-## Usage:
+## Usage
 
 With download:
 
 ```bash
 pip install NWICU_MEDS
-export DATASET_DOWNLOAD_USERNAME=...
-export DATASET_DOWNLOAD_PASSWORD=...
+export DATASET_DOWNLOAD_USERNAME=... # your PhysioNet username
+export DATASET_DOWNLOAD_PASSWORD=... # and password
 
-meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR
+suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR
 ```
 
 Without download (if you already have the dataset):
 
 ```bash
 pip install NWICU_MEDS
+suMEDS-extract spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR output_dir=$OUTPUT_DIR
+```
+
+[suMEDS](https://github.com/rvandewater/SumMEDS)' `suMEDS-extract` (installed with this package)
+runs the ETL with `meds-extract-run spec=NWICU`, then adds LOINC codes for lab and chart items,
+ICD ancestors, OMOP Gender codes and parents among NWICU's diagnosis codes to
+`metadata/codes.parquet` (see
+[Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds)). Arguments before a
+`--` go to `meds-extract-run`, and arguments after it go to `suMEDS-enrich`. For the plain ETL,
+run `meds-extract-run` with the same arguments:
+
+```bash
 meds-extract-run spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR output_dir=$OUTPUT_DIR
 ```
+
+The output directory holds the MEDS dataset (`data/` and `metadata/`, per the
+[MEDS standard](https://medical-event-data-standard.github.io/)), with the dataset name and
+version stamped in `metadata/dataset.json`.
 
 ## Configuration
 
@@ -110,18 +126,31 @@ RxNorm is a job for a mapping tool, not the ETL.
 
 The ETL writes what NWICU itself records. Links to external vocabularies that NWICU does not
 record, and parents among NWICU's own codes, are added afterwards by
-[suMEDS](https://github.com/rvandewater/SumMEDS) with the rules file shipped in this package,
-`src/NWICU_MEDS/sumeds_rules.yaml`. The crosswalk tables and ontology packs come from suMEDS's
-versioned ontology data (sumeds-ontologies, pinned release), so this repository does not ship
-them, and no Athena download or LOINC account is needed:
+[suMEDS](https://github.com/rvandewater/SumMEDS). The package ships the rules for it,
+[`src/NWICU_MEDS/sumeds_rules.yaml`](src/NWICU_MEDS/sumeds_rules.yaml), registered in suMEDS's
+`sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `NWICU`. That is
+how `suMEDS-extract spec=NWICU` finds them, and `--rules NWICU` works for any suMEDS command.
+`suMEDS-extract` replaces `metadata/codes.parquet` only once the enriched table is complete, and
+it stays valid MEDS code metadata. The crosswalk tables and ontology packs come from suMEDS's
+versioned ontology data (sumeds-ontologies, pinned release), fetched from GitHub on first use and
+cached, so this repository does not ship them, and no Athena download or LOINC account is needed.
+suMEDS options go after a `--`:
 
 ```bash
-suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o codes_enriched.parquet \
-  --rules "$(python -c 'from importlib.resources import files; print(files("NWICU_MEDS") / "sumeds_rules.yaml")')"
+# Also look codes up in your own OHDSI Athena download:
+suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR -- --athena-csv /path/to/athena
+# Use only already cached packs (no network):
+suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR -- --offline
 ```
 
-This needs suMEDS 0.4 or later (`pip install "sumeds>=0.4"`), the first release with ontology
-rules. The rules add:
+Running it again on an existing output skips the pipeline stages that are already done and
+enriches again. To enrich the `codes.parquet` of an existing build instead:
+
+```bash
+suMEDS-enrich "$OUTPUT_DIR/metadata/codes.parquet" -o "$OUTPUT_DIR/metadata/codes.parquet" --rules NWICU
+```
+
+The rules add:
 
 - **LOINC for lab and chart items** (`nwicu-lab-loinc`, a crosswalk): `LAB//{itemid}//{unit}`
     gets `LOINC//<code>` in `parent_codes`, plus `vocabulary_id` and `concept_code`, for the 45
@@ -134,9 +163,10 @@ rules. The rules add:
     MIMIC-IV items share one LOINC code are used, and each link inherits the MIMIC-IV item's
     specimen and method; the table records both ends of every bridge.
 - **ICD diagnoses** (`nwicu-icd10cm-diagnoses`, `nwicu-icd9cm-diagnoses`, ontology rules): the
-    dotted ICD-10-CM / ICD-9-CM code with `vocabulary_id`, `concept_code` and every ancestor in
-    the pack (`ICD10CM//I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`), next to the ETL's own
-    `ICD10CM/…` parent.
+    dotted ICD-10-CM / ICD-9-CM code is validated against the pack and gives `vocabulary_id`,
+    `concept_code` and every ancestor in the pack. The ETL's own parent stays first, since suMEDS
+    counts `ICD10CM/I50.23` and `ICD10CM//I50.23` as the same entry, and the ancestors follow it
+    (`DIAGNOSIS//ICD//10//I5023` gets `ICD10CM/I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
 - **Gender** (`nwicu-gender`, an ontology rule): `GENDER//F` and `GENDER//M` get the OMOP Gender
     codes `Gender//F` and `Gender//M` (a tag: Gender has no public pack; with `--athena-csv`
     suMEDS validates them against Athena).
@@ -144,18 +174,24 @@ rules. The rules add:
     code of the table becomes the parent of another when its ICD code is the nearest ancestor
     present (`DIAGNOSIS//ICD//10//I5023` gets `DIAGNOSIS//ICD//10//I502` when both occur).
 
-The ETL alone no longer emits the LOINC parents of lab and chart codes (earlier builds of this
-branch wrote `LOINC/<code>` for the same 50 itemids), and it never emitted ICD ancestors,
-Gender codes or parents among NWICU codes; suMEDS supplies them. suMEDS never removes or
-rewrites the ETL's own parents (`ICD10CM/…`, `NDC/…`) or descriptions.
+Every parent that a pack (or Athena) knows is named in `parent_names`, a map from the parent
+code to its name (`map<string, string>` in parquet; suMEDS 0.6 replaced the earlier list aligned
+with `parent_codes`). Tags and parents among NWICU codes have no entry; the latter are described
+in their own rows.
+
+The ETL alone no longer emits the LOINC parents of lab and chart codes (earlier builds wrote
+`LOINC/<code>` for the same 50 itemids), and it never emitted ICD ancestors, Gender codes or
+parents among NWICU codes; suMEDS supplies them. suMEDS never removes or rewrites the ETL's own
+parents (`ICD10CM/…`, `NDC/…`) or descriptions: it only fills empty fields and appends parents.
 
 ## Summary statistics
 
 [`tests/regression/full_summary_stats.json`](tests/regression/full_summary_stats.json) is a
 [meds_summary_stats](https://github.com/Medical-Event-Data-Standard/meds_summary_stats) fingerprint of
-the MEDS dataset this ETL builds from the full NWICU 0.1.0 release: subject, event and measurement
-counts, digests of the code vocabulary, per-subject, value and time distributions, code-metadata
-coverage, the splits and the schema. It names no code and reports no cell of fewer than 20 subjects and
+the MEDS dataset this ETL builds from the full NWICU 0.1.0 release. `scripts/summary_stats.sh` builds
+it with `suMEDS-extract spec=NWICU`, so its code-metadata coverage includes the suMEDS enrichment. It
+covers subject, event and measurement counts, digests of the code vocabulary, per-subject, value and
+time distributions, code-metadata coverage, the splits and the schema. It names no code and reports no cell of fewer than 20 subjects and
 no minimum or maximum, which is what makes it safe to publish. Because it is committed next to the ETL,
 its diff shows what an ETL change did to the output, and two ETL versions can be compared without
 access to the data.
@@ -174,8 +210,8 @@ Both print how the statistics changed against the committed baseline before over
 [`tests/regression/policy.yaml`](tests/regression/policy.yaml) flags an error. Rebuilding the same
 commit reproduces the baseline exactly, so any finding is a change in the output. CI cannot rebuild the
 credentialed release, so the [Summary stats workflow](.github/workflows/summary-stats.yaml) only warns
-when a pull request changes `src/` without regenerating the baseline. A MEDS-Extract or polars upgrade
-can also move the output, so check it with `--compare`.
+when a pull request changes `src/` (the config or the suMEDS rules) without regenerating the baseline. A
+MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it with `--compare`.
 
 ## Citation
 
