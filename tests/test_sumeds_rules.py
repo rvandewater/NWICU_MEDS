@@ -54,7 +54,7 @@ def test_rules_file_is_packaged():
 
 
 def test_rules_are_registered_under_the_spec_name():
-    """`suMEDS-extract spec=NWICU` and `--rules NWICU` find the rules by this entry point."""
+    """The spec's `sumeds_enrich` stage and `--rules NWICU` find the rules by this entry point."""
     assert PIPELINE_NAME in registered_rules()
     assert registered_rules()[PIPELINE_NAME] == f"{__package_name__}:sumeds_rules.yaml"
     assert load_rules(PIPELINE_NAME) == load_rules(RULES_FP)

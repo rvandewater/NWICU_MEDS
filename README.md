@@ -25,31 +25,30 @@ pip install NWICU_MEDS
 export DATASET_DOWNLOAD_USERNAME=... # your PhysioNet username
 export DATASET_DOWNLOAD_PASSWORD=... # and password
 
-suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR
 ```
 
 Without download (if you already have the dataset):
 
 ```bash
 pip install NWICU_MEDS
-suMEDS-extract spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR output_dir=$OUTPUT_DIR
-```
-
-[suMEDS](https://github.com/rvandewater/SumMEDS)' `suMEDS-extract` (installed with this package)
-runs the ETL with `meds-extract-run spec=NWICU`, then adds LOINC codes for lab and chart items,
-ICD ancestors, OMOP Gender codes and parents among NWICU's diagnosis codes to
-`metadata/codes.parquet` (see
-[Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds)). Arguments before a
-`--` go to `meds-extract-run`, and arguments after it go to `suMEDS-enrich`. For the plain ETL,
-run `meds-extract-run` with the same arguments:
-
-```bash
 meds-extract-run spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR output_dir=$OUTPUT_DIR
 ```
 
+This one command runs the ETL and then enriches its code metadata with
+[suMEDS](https://github.com/rvandewater/SumMEDS) (installed with this package): the spec ends with
+suMEDS's `sumeds_enrich` stage, which adds LOINC codes for lab and chart items, ICD ancestors, OMOP
+Gender codes and parents among NWICU's diagnosis codes to `metadata/codes.parquet`. If it cannot
+(no internet, say), the ETL still succeeds, unenriched, and `suMEDS-enrich $OUTPUT_DIR` finishes it
+later. Add `skip_stages=[sumeds_enrich]` for the plain ETL. See
+[Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds).
+
 The output directory holds the MEDS dataset (`data/` and `metadata/`, per the
 [MEDS standard](https://medical-event-data-standard.github.io/)), with the dataset name and
-version stamped in `metadata/dataset.json`.
+version stamped in `metadata/dataset.json`. `dataset.json` also gives the release's `license` and
+PhysioNet page (`description_uri`), and lists `hadm_id`, `icustay_id`, `emar_id` and
+`pharmacy_id`, the keys back to the raw tables, under `raw_source_id_columns`; MEDS-Extract lists
+every other extension column under `other_extension_columns`.
 
 ## Configuration
 
@@ -128,27 +127,33 @@ The ETL writes what NWICU itself records. Links to external vocabularies that NW
 record, and parents among NWICU's own codes, are added afterwards by
 [suMEDS](https://github.com/rvandewater/SumMEDS). The package ships the rules for it,
 [`src/NWICU_MEDS/sumeds_rules.yaml`](src/NWICU_MEDS/sumeds_rules.yaml), registered in suMEDS's
-`sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `NWICU`. That is
-how `suMEDS-extract spec=NWICU` finds them, and `--rules NWICU` works for any suMEDS command.
-`suMEDS-extract` replaces `metadata/codes.parquet` only once the enriched table is complete, and
-it stays valid MEDS code metadata. The crosswalk tables and ontology packs come from suMEDS's
-versioned ontology data (sumeds-ontologies, pinned release), fetched from GitHub on first use and
-cached, so this repository does not ship them, and no Athena download or LOINC account is needed.
-suMEDS options go after a `--`:
+`sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `NWICU`, so
+`--rules NWICU` works for any suMEDS command. The spec runs them as its last stage:
 
-```bash
-# Also look codes up in your own OHDSI Athena download:
-suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR -- --athena-csv /path/to/athena
-# Use only already cached packs (no network):
-suMEDS-extract spec=NWICU output_dir=$OUTPUT_DIR -- --offline
+```yaml
+etl:
+  post_stages:
+    - sumeds_enrich: {rules: NWICU}
 ```
 
-Enrichment is on by default and soft-fails: if it cannot run (a server without internet, for
-example), the ETL still succeeds with `metadata/codes.parquet` left exactly as `meds-extract-run`
-writes it, and a warning gives the command to enrich it later. `metadata/dataset.json` says whether
-a build is enriched: `sumeds_enrichment.enriched` is `true` (with the rules, pack source and
-coverage) or `false` (with the error and the `retry` command). To enrich a build afterwards, with
-the rules and options of the default run:
+The stage replaces `metadata/codes.parquet` only once the enriched table is complete, and it stays
+valid MEDS code metadata. The crosswalk tables and ontology packs come from suMEDS's
+versioned ontology data (sumeds-ontologies, pinned release), fetched from GitHub on first use and
+cached, so this repository does not ship them, and no Athena download or LOINC account is needed.
+
+`metadata/dataset.json` says whether a build is enriched: `sumeds_enrichment.enriched` is `true`
+(with the rules, pack source and coverage) or `false` (with the error and the `retry` command).
+
+```bash
+jq .sumeds_enrichment.enriched $OUTPUT_DIR/metadata/dataset.json
+```
+
+Enrichment soft-fails: if it cannot run (a server without internet, for example), the ETL still
+succeeds with `metadata/codes.parquet` left exactly as MEDS-Extract writes it, and `dataset.json`
+records `"enriched": false`. The warning, with the command that finishes the enrichment, is in
+`$OUTPUT_DIR/.logs/pipeline.log`, not on the console. MEDS-Extract marks the stage done either
+way, so running `meds-extract-run` again does not retry it. Enrich the build afterwards, with the
+rules and options of the failed run:
 
 ```bash
 suMEDS-enrich $OUTPUT_DIR
@@ -156,9 +161,36 @@ suMEDS-enrich $OUTPUT_DIR
 suMEDS-enrich $OUTPUT_DIR --ontology-source /path/to/sumeds-ontologies/ontologies --offline
 ```
 
-For the plain, unenriched ETL, run `meds-extract-run` instead of `suMEDS-extract`. To make a failed
-enrichment an error (exit code 1), pass `-- --strict`. Running `suMEDS-extract` again on an existing
-output skips the pipeline stages that are already done and enriches again.
+For the plain, unenriched ETL, leave the stage out with `skip_stages=[sumeds_enrich]`:
+
+```bash
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR skip_stages=[sumeds_enrich]
+```
+
+The stage takes the `suMEDS-enrich` options, spelled with underscores. Set them for one run with
+`overrides=`, as `++stage_cfg.<option>` (the override reaches every stage of the pipeline, and only
+this one declares the option, hence the `++`):
+
+```bash
+# Make a failed enrichment fail the run (exit code 1):
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.strict=true']"
+# Also look codes up in your own OHDSI Athena download:
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.athena_csv=/path/to/athena']"
+# Read the packs from a local copy (or set SUMEDS_ONTOLOGY_SOURCE=/path/to/ontologies):
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.ontology_source=/path/to/ontologies']"
+```
+
+On a cluster whose compute nodes have no internet access, fill a cache on shared storage once from
+a login node, then run with `offline`, so nothing tries the network:
+
+```bash
+# The same cache on the login node and the compute nodes:
+export XDG_CACHE_HOME=/shared/project/cache
+# On the login node, download the pinned pack release (about 30 MB):
+suMEDS-enrich --prefetch --rules NWICU
+# On a compute node:
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.offline=true']"
+```
 
 The rules add:
 
@@ -199,7 +231,7 @@ parents (`ICD10CM/…`, `NDC/…`) or descriptions: it only fills empty fields a
 [`tests/regression/full_summary_stats.json`](tests/regression/full_summary_stats.json) is a
 [meds_summary_stats](https://github.com/Medical-Event-Data-Standard/meds_summary_stats) fingerprint of
 the MEDS dataset this ETL builds from the full NWICU 0.1.0 release. `scripts/summary_stats.sh` builds
-it with `suMEDS-extract spec=NWICU`, so its code-metadata coverage includes the suMEDS enrichment. It
+it with `meds-extract-run spec=NWICU`, so its code-metadata coverage includes the suMEDS enrichment. It
 covers subject, event and measurement counts, digests of the code vocabulary, per-subject, value and
 time distributions, code-metadata coverage, the splits and the schema. It names no code and reports no cell of fewer than 20 subjects and
 no minimum or maximum, which is what makes it safe to publish. Because it is committed next to the ETL,
@@ -215,7 +247,8 @@ scripts/summary_stats.sh full --input-dir $PHYSIONET_INPUT_DIR
 scripts/summary_stats.sh full --meds-dir $MEDS_OUTPUT_DIR
 ```
 
-Both print how the statistics changed against the committed baseline before overwriting it. Add
+Both print how the statistics changed against the committed baseline before overwriting it, and
+refuse a build whose enrichment failed (finish it with `suMEDS-enrich` first). Add
 `--compare` to check a build without writing anything; it exits 1 when
 [`tests/regression/policy.yaml`](tests/regression/policy.yaml) flags an error. Rebuilding the same
 commit reproduces the baseline exactly, so any finding is a change in the output. CI cannot rebuild the

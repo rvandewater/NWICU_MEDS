@@ -23,14 +23,16 @@ classifiers = [
 # Pure-config ETL: MEDS-Extract supplies both CLIs (`meds-extract-download`, `meds-extract-run`)
 # and every extraction stage. It is capped below the next minor: MEDS-Extract 0.x minors are
 # breaking (0.8 renamed the MESSY `_table.join` key to `_table.joins`), so raise it deliberately
-# when migrating. suMEDS provides `suMEDS-extract`, which runs this ETL and then enriches its code
-# metadata with the rules registered below, and `suMEDS-enrich` for an existing build; 0.6.1 is
-# the first release whose `suMEDS-extract` soft-fails enrichment (a site without internet still
-# gets its ETL) and records in `metadata/dataset.json` whether the build was enriched. It is
-# capped below the next minor for the same reason (its rules format and CLI are still 0.x).
+# when migrating. 0.8.1 is the first release that runs the extension stages a spec declares
+# (`etl.post_stages`) and writes the `etl:` descriptors and extension-column categories into
+# `metadata/dataset.json`. suMEDS 0.6.2 registers the `sumeds_enrich` stage the spec declares,
+# which enriches the code metadata with the rules registered below, soft-fails (a site without
+# internet still gets its ETL) and records in `metadata/dataset.json` whether the build was
+# enriched; it also provides `suMEDS-enrich` for an existing build. It is capped below the next
+# minor for the same reason (its rules format and CLI are still 0.x).
 dependencies = [
-  "MEDS-extract[download]>=0.8.0,<0.9",
-  "sumeds>=0.6.1,<0.7",
+  "MEDS-extract[download]>=0.8.1,<0.9",
+  "sumeds>=0.6.2,<0.7",
 ]
 
 [project.optional-dependencies]
@@ -50,7 +52,7 @@ docs = [
 [project.entry-points."MEDS_extract.pipelines"]
 NWICU = "NWICU_MEDS:messy.yaml"
 
-# Registers the suMEDS rules under the same name, so `suMEDS-extract spec=NWICU` and
+# Registers the suMEDS rules under the same name, so the spec's `sumeds_enrich` stage and
 # `--rules NWICU` find them.
 [project.entry-points."sumeds.rules"]
 NWICU = "NWICU_MEDS:sumeds_rules.yaml"

@@ -1,14 +1,15 @@
 # Contributing
 
 This repository is a **MEDS-Extract 0.8 ETL**. All of it is two declarative files: the MESSY
-config and the suMEDS rules that enrich its code metadata. There is no Python to change.
+config and the suMEDS rules that enrich its code metadata, which the config runs as its last stage.
+There is no Python to change.
 
 ```bash
 pip install NWICU_MEDS
 export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
 export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
 
-suMEDS-extract spec=NWICU output_dir=$ROOT_OUTPUT_DIR
+meds-extract-run spec=NWICU output_dir=$ROOT_OUTPUT_DIR
 ```
 
 ## What the 0.7 layout looks like
@@ -39,7 +40,7 @@ NWICU = "NWICU_MEDS:sumeds_rules.yaml"
 Those values are **parsed, not imported** — each names a package and a data file inside it, which
 is why they do not look like normal `module:attribute` targets. The suMEDS rules
 ([`src/NWICU_MEDS/sumeds_rules.yaml`](src/NWICU_MEDS/sumeds_rules.yaml)) are registered under the
-same name as the spec, which is how `suMEDS-extract spec=NWICU` finds them.
+same name as the spec, which is how the spec's `sumeds_enrich` stage finds them.
 
 ## Editing the config
 
@@ -69,9 +70,9 @@ uv run pre-commit run --all-files
 ```
 
 There is no demo release for NWICU, and the credentialed download cannot run in CI. The suite
-therefore parses the config, checks the suMEDS rules, and runs `meds-extract-run spec=NWICU` and
-`suMEDS-extract spec=NWICU` end to end over a tiny synthetic release
-([`tests/conftest.py`](tests/conftest.py)), offline against a synthetic ontology pack
+therefore parses the config, checks the suMEDS rules, and runs `meds-extract-run spec=NWICU` end to
+end over a tiny synthetic release ([`tests/conftest.py`](tests/conftest.py)), without its enrichment
+stage and with it, offline against a synthetic ontology pack
 ([`tests/test_run_with_enrichment.py`](tests/test_run_with_enrichment.py)). Changes that affect
 the output should still be validated by running the ETL over the real release and comparing the
 summary statistics before and after (see "Summary statistics" in the README).
