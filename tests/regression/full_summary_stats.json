@@ -241,13 +241,26 @@
     }
   },
   "dataset": {
-    "created_at": "2026-11-07T19:35:03.123791+00:00",
+    "created_at": "2026-11-08T00:34:14.157735+00:00",
     "dataset_name": "NWICU",
     "dataset_version": "0.1.0:1.0.0",
+    "description_uri": "https://physionet.org/content/nwicu-northwestern-icu/0.1.0/",
     "etl_name": "MEDS_transforms",
     "etl_version": "0.7.0",
+    "license": "PhysioNet Credentialed Health Data License 1.5.0",
     "meds_version": "0.4.1",
+    "other_extension_columns": [
+      "source_block",
+      "emar_seq",
+      "priority"
+    ],
     "present": true,
+    "raw_source_id_columns": [
+      "hadm_id",
+      "icustay_id",
+      "emar_id",
+      "pharmacy_id"
+    ],
     "sumeds_enrichment": {
       "athena": false,
       "coverage": {
@@ -262,7 +275,7 @@
         ]
       },
       "enriched": true,
-      "enriched_at": "2026-11-07T19:35:12Z",
+      "enriched_at": "2026-11-08T00:34:25Z",
       "ontology_source": "rvandewater/sumeds-ontologies@v0.2.0",
       "options": {
         "child_codes": false,
@@ -274,8 +287,8 @@
         "sibling_codes": false
       },
       "rules": "NWICU",
-      "rules_sha256": "4ec361fd2d7c6e62f61ec21ac26f08739255cc8c6807ecff61d3ecaecc7f6110",
-      "sumeds_version": "0.6.1"
+      "rules_sha256": "2dc3a8bfe5185ce09a3bd67a4db47a945f984fa91a1f66bcdb8adc89fcf59386",
+      "sumeds_version": "0.6.2"
     }
   },
   "dataset_digest": {
@@ -308,7 +321,7 @@
       "data/tuning/1.parquet": "sha256:6ea008ca8badf6ce910815b747b1a36128a956798ea5688cd3248870f2367768",
       "data/tuning/2.parquet": "sha256:e2e658f8e73bd0f674c5c6bfbbad2fcd3da93888f87150df6df4a4cebc9c9c6b",
       "metadata/codes.parquet": "sha256:c7c1b122a10f7421c9fa9859cf0c2e44af1a90af2780d741bf46a53a9f842408",
-      "metadata/dataset.json": "sha256:de2f9e5fa382e02d7edf23dac726af349f4187dfa50483e858e0fa6185c8a2ee",
+      "metadata/dataset.json": "sha256:db31135882f09d4dfeaebb15728b951ea039be37a55142dd00453c6b31968cc5",
       "metadata/subject_splits.parquet": "sha256:8231b5dd5037ebb844165536872469ff61c2f91589ef33590136b967aef49f08"
     },
     "code_metadata": "sha256:5781ad318795a8ce82b163ccd4f9754de61ca740874e7b739bc0b2103a9cb8bd",
@@ -317,12 +330,12 @@
       "digest": "sha256:90ea73be91aa2c842f7d9744d5e1b76f3d26ac448801a76ae57479ea9dee3dae",
       "n_files": 27
     },
-    "dataset_metadata": "sha256:750d3dc53af4ac58b9baa8130705c6cb365a4aebcf0133d4d6768bcee0b9667a",
+    "dataset_metadata": "sha256:ca2dc94a7bd95d5a53cccfe725abcc1d0783b86fac56f25a5cc0388aa40950fc",
     "method": "files",
     "n_files": 30,
     "subject_splits": "sha256:89a8e11536b5531b7854187c3437ce68cd82440bfbf43f5c1e33281b5f015ff6"
   },
-  "extracted_at": "2026-11-07T19:35:17.115021",
+  "extracted_at": "2026-11-08T00:34:30.797416",
   "layout": {
     "code_metadata_columns": {
       "code": "String",
