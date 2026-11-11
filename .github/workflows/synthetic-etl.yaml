@@ -30,20 +30,13 @@ jobs:
         run: uv run --locked pytest tests/
 
       - name: Generate and extract synthetic data
-        # MESSY_synth reads MEDS-Extract 0.7 configs and requires MEDS-extract<0.8 (and Python >= 3.12),
-        # so it runs in a tool environment of its own, on a 0.7 copy of the config: 0.7's
-        # `_table.join` key, and without the `etl:` keys new in 0.8.1 (the extension stages and the
-        # dataset.json descriptors), which its MEDS-Extract rejects and which don't affect which raw
-        # columns the config reads. The ETL then runs the shipped config, suMEDS enrichment stage
-        # included, with this project's locked MEDS-Extract. Drop the copy once MESSY_synth reads
-        # 0.8.1 configs.
+        # MESSY_synth generates raw files straight from the shipped config, with this project's
+        # MEDS-Extract (0.1.0 reads 0.8 configs, `_table.joins` included; it requires Python >= 3.12).
+        # The ETL then runs the shipped config, suMEDS enrichment stage included, on the locked
+        # environment.
         run: |
-          sed 's/^    joins:$/    join:/' src/NWICU_MEDS/messy.yaml |
-            awk '/^etl:/ { etl = 1; print; next } etl && /^[^ ]/ { etl = 0 } /^$/ { drop = 0 }
-              etl && /^  [a-z_]+:/ { drop = $1 ~ /^(pre_stages|post_stages|license|location_uri|description_uri|raw_source_id_columns|code_modifier_columns|additional_value_modality_columns|site_id_columns):$/ }
-              !(etl && drop)' >messy_0.7.yaml
-          uvx --python 3.12 --from git+https://github.com/rvandewater/MESSY_synth.git \
-            MESSY_synth ./messy_0.7.yaml -o raw_synthetic/ --explain
+          uv pip install "MESSY_synth==0.1.0"
+          uv run --no-sync MESSY-synth ./src/NWICU_MEDS/messy.yaml -o raw_synthetic/ --explain
           uv run --locked meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
           # The stage ran and recorded the enrichment (or, without the packs, a soft failure).
           jq -e '.sumeds_enrichment.rules == "NWICU"' nwicu_meds_synth/metadata/dataset.json
