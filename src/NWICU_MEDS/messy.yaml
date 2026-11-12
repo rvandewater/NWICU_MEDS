@@ -10,6 +10,18 @@ sources:
 etl:
   dataset_name: NWICU
   n_subjects_per_shard: 1000
+  # Written to `metadata/dataset.json`, from the release's PhysioNet page. Keep the URI's version
+  # in step with `sources.dataset_version`.
+  license: PhysioNet Credentialed Health Data License 1.5.0
+  description_uri: https://physionet.org/content/nwicu-northwestern-icu/0.1.0/
+  # The release's admission, ICU stay, eMAR and pharmacy keys. Every other extension column is
+  # listed under `other_extension_columns` in `dataset.json`.
+  raw_source_id_columns: [hadm_id, icustay_id, emar_id, pharmacy_id]
+  # After the canonical stages, suMEDS adds titles and parent codes to `metadata/codes.parquet` and
+  # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
+  # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
+  post_stages:
+    - sumeds_enrich: { rules: NWICU }
 
 _defaults:
   subject_id: $subject_id
@@ -102,7 +114,7 @@ data/nw_hosp/admissions:
 
 data/nw_hosp/diagnoses_icd:
   _table:
-    join:
+    joins:
       data/nw_hosp/admissions: { key: hadm_id, cols: [dischtime] }
   diagnosis:
     code: 'f"DIAGNOSIS//ICD//{$icd_version ?? ''UNK''}//{$icd_code ?? ''UNK''}"'
@@ -148,7 +160,7 @@ data/nw_hosp/labevents:
 
 data/nw_hosp/patients:
   _table:
-    join:
+    joins:
       data/nw_hosp/admissions: { key: subject_id, cols: { deathtime: min } }
     cols:
       dod_final: $deathtime ?? $dod

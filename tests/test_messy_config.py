@@ -1,9 +1,9 @@
 """Validate the bundled MESSY config against the installed MEDS-Extract.
 
 These tests need no raw data and no credentials, so they run in CI on every push. They are the
-regression net for the 0.7 migration: a MESSY file that stops parsing (a bad dftly expression, a
-stray 0.6.x key, an `etl:` option MEDS-Extract does not accept) fails here rather than several
-stages into a multi-hour extraction run.
+regression net for MEDS-Extract migrations: a MESSY file that stops parsing (a bad dftly
+expression, a stray 0.6.x key, 0.7's `_table.join` under 0.8, an `etl:` option MEDS-Extract does
+not accept) fails here rather than several stages into a multi-hour extraction run.
 """
 
 import pytest
@@ -103,9 +103,18 @@ def test_physionet_source_targets_nwicu_release(cfg: MessyConfig, dummy_credenti
 
 
 def test_etl_block(cfg: MessyConfig):
-    """The reserved `etl:` block carries the dataset identity and stage options."""
+    """The reserved `etl:` block carries the dataset identity, stage options, the `dataset.json`
+    descriptors and the suMEDS enrichment stage that runs after the ETL."""
     assert cfg.etl.dataset_name == "NWICU"
-    assert cfg.etl.stage_options["n_subjects_per_shard"] == 1000
+    options = cfg.etl.stage_options
+    assert options["n_subjects_per_shard"] == 1000
+    assert options["license"] == "PhysioNet Credentialed Health Data License 1.5.0"
+    assert options["description_uri"] == (
+        f"https://physionet.org/content/nwicu-northwestern-icu/{cfg.sources_version}/"
+    )
+    assert [(s.name, s.options) for s in cfg.etl.post_stages] == [
+        ("sumeds_enrich", {"rules": PIPELINE_NAME})
+    ]
 
 
 def test_sources_declare_dataset_version(cfg: MessyConfig):

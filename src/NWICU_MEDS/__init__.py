@@ -1,9 +1,14 @@
 """NWICU MEDS ETL -- a pure-config MEDS-Extract pipeline.
 
 This package contains no ETL code. The entire pipeline is `messy.yaml`, registered under
-the `MEDS_extract.pipelines` entry-point group, so it runs as:
+the `MEDS_extract.pipelines` entry-point group, and its suMEDS enrichment rules are
+`sumeds_rules.yaml`, registered under the same name in the `sumeds.rules` group. The spec
+declares suMEDS's `sumeds_enrich` post-stage with these rules, so the ETL followed by the
+enrichment of its code metadata runs as one command:
 
     meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR
+
+and the ETL alone with `skip_stages=[sumeds_enrich]` added.
 """
 
 from importlib.metadata import PackageNotFoundError, version
@@ -15,8 +20,9 @@ try:
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 
-# The name this ETL registers under `MEDS_extract.pipelines`; `meds-extract-run spec=NWICU`
-# resolves it, and MEDS-Extract uses it as the default dataset name.
+# The name this ETL registers under `MEDS_extract.pipelines` and its rules under `sumeds.rules`;
+# `meds-extract-run spec=NWICU` and the spec's `sumeds_enrich` stage resolve it, and MEDS-Extract
+# uses it as the default dataset name.
 PIPELINE_NAME = "NWICU"
 
 MESSY_CFG = files(__package_name__).joinpath("messy.yaml")

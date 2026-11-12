@@ -2,18 +2,21 @@
 
 suMEDS validates the rules file itself (``sumeds.load_rules``) and resolves codes with the rule
 objects its enrichment uses, so these tests only state what NWICU's codes must resolve to. The
-example codes are rendered from the ETL's own ``messy.yaml`` templates with synthetic values.
+example codes are rendered from the ETL's own ``messy.yaml`` templates with synthetic values, and
+``test_rules_match_the_codes_the_etl_writes`` checks the codes of the ETL run over the synthetic
+release of ``conftest.py``.
 """
 
 import re
 from importlib.resources import files
 from pathlib import Path
 
+import polars as pl
 import pytest
 import yaml
-from sumeds import OntologyRules, load_rules
+from sumeds import OntologyRules, load_rules, registered_rules
 
-from NWICU_MEDS import MESSY_CFG, __package_name__
+from NWICU_MEDS import MESSY_CFG, PIPELINE_NAME, __package_name__
 
 RULES_FP = Path(__file__).parents[1] / "src" / "NWICU_MEDS" / "sumeds_rules.yaml"
 ICD_RULES = {"10": "nwicu-icd10cm-diagnoses", "9": "nwicu-icd9cm-diagnoses"}
@@ -48,6 +51,13 @@ def _render(template: str, **values: str) -> str:
 
 def test_rules_file_is_packaged():
     assert files(__package_name__).joinpath("sumeds_rules.yaml").is_file()
+
+
+def test_rules_are_registered_under_the_spec_name():
+    """The spec's `sumeds_enrich` stage and `--rules NWICU` find the rules by this entry point."""
+    assert PIPELINE_NAME in registered_rules()
+    assert registered_rules()[PIPELINE_NAME] == f"{__package_name__}:sumeds_rules.yaml"
+    assert load_rules(PIPELINE_NAME) == load_rules(RULES_FP)
 
 
 def test_rules_load_in_sumeds():
@@ -122,3 +132,31 @@ def test_lab_loinc_crosswalk_skips_other_families(raw_cfg, rules):
     ):
         code = _render(raw_cfg[table][event]["code"], itemid="123456")
         assert rule.key(code) is None, code
+
+
+def test_rules_match_the_codes_the_etl_writes(
+    rules: OntologyRules, codes: pl.DataFrame
+):
+    """Over a real ETL run, each code family meets exactly the rule written for it, and no other
+    code matches any rule."""
+    matched = {}
+    for code in codes["code"]:
+        hits = [rule.id for rule in rules.ontology if rule.resolve(code) is not None]
+        hits += [rule.id for rule in rules.crosswalk if rule.key(code) is not None]
+        assert len(hits) <= 1, f"{code} matches several rules: {hits}"
+        if hits:
+            matched[code] = hits[0]
+    assert matched == {
+        "DIAGNOSIS//ICD//10//E119": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//10//I502": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//10//I5023": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//10//R4689": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//9//4019": "nwicu-icd9cm-diagnoses",
+        "DIAGNOSIS//ICD//9//E8889": "nwicu-icd9cm-diagnoses",
+        "GENDER//F": "nwicu-gender",
+        "GENDER//M": "nwicu-gender",
+        "LAB//800001//bpm": "nwicu-lab-loinc",
+        "LAB//900001//mg/dL": "nwicu-lab-loinc",
+        "LAB//900002//mEq/L": "nwicu-lab-loinc",
+        "LAB//900003//UNK": "nwicu-lab-loinc",
+    }

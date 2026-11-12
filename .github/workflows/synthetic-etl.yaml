@@ -22,13 +22,24 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --locked
+        run: uv sync --locked --extra tests
+
+      # The config and suMEDS-rules tests, and the offline `meds-extract-run spec=NWICU` runs, with
+      # and without the suMEDS enrichment stage, over the synthetic release of tests/conftest.py.
+      - name: Run the test suite
+        run: uv run --locked pytest tests/
 
       - name: Generate and extract synthetic data
+        # MESSY_synth generates raw files straight from the shipped config, with this project's
+        # MEDS-Extract (0.1.0 reads 0.8 configs, `_table.joins` included; it requires Python >= 3.12).
+        # The ETL then runs the shipped config, suMEDS enrichment stage included, on the locked
+        # environment.
         run: |
-          uv pip install https://github.com/rvandewater/MESSY_synth.git
-          uv run MESSY_synth ./src/NWICU_MEDS/messy.yaml -o raw_synthetic/ --explain
-          uv run meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
+          uv pip install "MESSY_synth==0.1.0"
+          uv run --no-sync MESSY-synth ./src/NWICU_MEDS/messy.yaml -o raw_synthetic/ --explain
+          uv run --locked meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
+          # The stage ran and recorded the enrichment (or, without the packs, a soft failure).
+          jq -e '.sumeds_enrichment.rules == "NWICU"' nwicu_meds_synth/metadata/dataset.json
 
       - name: Check the code metadata of the synthetic build
-        run: NWICU_MEDS_OUTPUT_DIR=./nwicu_meds_synth uv run pytest tests/test_code_metadata.py
+        run: NWICU_MEDS_OUTPUT_DIR=./nwicu_meds_synth uv run --locked pytest tests/test_code_metadata.py

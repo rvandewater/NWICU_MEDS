@@ -1,14 +1,15 @@
 # Contributing
 
-This repository is a **MEDS-Extract 0.7 ETL**. Almost all of it is one declarative file; there is
-very little Python to change.
+This repository is a **MEDS-Extract 0.8 ETL**. All of it is two declarative files: the MESSY
+config and the suMEDS rules that enrich its code metadata, which the config runs as its last stage.
+There is no Python to change.
 
 ```bash
 pip install NWICU_MEDS
 export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
 export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
 
-MEDS_extract-NWICU $ROOT_OUTPUT_DIR
+meds-extract-run spec=NWICU output_dir=$ROOT_OUTPUT_DIR
 ```
 
 ## What the 0.7 layout looks like
@@ -23,7 +24,7 @@ Under MEDS-Transforms 0.2.x an ETL was a Python package: `pre_MEDS.py` reshaped 
 | `dataset.yaml` + `download.py` | the `sources:` block                                                      |
 | `configs/ETL.yaml`             | nothing — the stage sequence is canonical and not configurable            |
 | `configs/event_configs.yaml`   | the event tables, written in [dftly](https://github.com/mmcdermott/dftly) |
-| `pre_MEDS.py`                  | mostly `_table.join` / `_table.cols` (see the exception below)            |
+| `pre_MEDS.py`                  | `_table.joins` / `_table.cols`                                            |
 
 The file lives at [`src/NWICU_MEDS/messy.yaml`](src/NWICU_MEDS/messy.yaml) and is registered
 under the `MEDS_extract.pipelines` entry-point group in `pyproject.toml`:
@@ -31,10 +32,15 @@ under the `MEDS_extract.pipelines` entry-point group in `pyproject.toml`:
 ```toml
 [project.entry-points."MEDS_extract.pipelines"]
 NWICU = "NWICU_MEDS:messy.yaml"
+
+[project.entry-points."sumeds.rules"]
+NWICU = "NWICU_MEDS:sumeds_rules.yaml"
 ```
 
-That value is **parsed, not imported** — it names a package and a data file inside it, which is
-why it does not look like a normal `module:attribute` target.
+Those values are **parsed, not imported** — each names a package and a data file inside it, which
+is why they do not look like normal `module:attribute` targets. The suMEDS rules
+([`src/NWICU_MEDS/sumeds_rules.yaml`](src/NWICU_MEDS/sumeds_rules.yaml)) are registered under the
+same name as the spec, which is how the spec's `sumeds_enrich` stage finds them.
 
 ## Editing the config
 
@@ -50,24 +56,10 @@ Three things bite newcomers, in rough order of how often:
     A bare `null` parses as the *string* `"null"`. Tracked in
     [dftly#113](https://github.com/mmcdermott/dftly/issues/113).
 
-Also worth knowing: a table may declare **exactly one** `_table.join`, `_table.cols` entries are
-evaluated in order so later ones may reference earlier ones, and adding a Duration to a Datetime
-must be written as `anchor - (-$offset)::minutes` because `+` does not lower correctly.
-
-## The one piece of Python
-
-`MEDS_BIRTH` and `MEDS_DEATH` are per-**subject** facts, but INSPIRE records what they derive from
-on `operations`, which is one row per **operation**. MESSY cannot reduce a table over its own rows
-— self-joins are rejected and dftly is strictly row-wise — so
-[`src/NWICU_MEDS/pre_MEDS.py`](src/NWICU_MEDS/pre_MEDS.py) reduces `operations` to one row per
-subject, and the config joins that side table back.
-
-`MEDS_extract-NWICU` chains the three steps: `meds-extract-download`, that reduction, then
-`meds-extract-run`. It stages the side table in a directory of **symlinks** to the raw release, so
-the checksum-verified download is never modified.
-
-If you are porting another dataset and it needs no such reduction, drop the Python entirely and
-let users call `meds-extract-run spec=<NAME>` directly.
+Also worth knowing: `_table.joins` may name several tables, each its own left join applied in
+order (0.7 called the key `_table.join` and allowed one), `_table.cols` entries are evaluated in
+order so later ones may reference earlier ones, and adding a Duration to a Datetime must be
+written as `anchor - (-$offset)::minutes` because `+` does not lower correctly.
 
 ## Testing
 
@@ -77,9 +69,13 @@ uv run pytest tests/
 uv run pre-commit run --all-files
 ```
 
-There is no demo release for INSPIRE, so there is no end-to-end CI test — the credentialed
-download cannot run in CI. Changes that affect the output should be validated by running the ETL
-over the real release and comparing cohort statistics before and after.
+There is no demo release for NWICU, and the credentialed download cannot run in CI. The suite
+therefore parses the config, checks the suMEDS rules, and runs `meds-extract-run spec=NWICU` end to
+end over a tiny synthetic release ([`tests/conftest.py`](tests/conftest.py)), without its enrichment
+stage and with it, offline against a synthetic ontology pack
+([`tests/test_run_with_enrichment.py`](tests/test_run_with_enrichment.py)). Changes that affect
+the output should still be validated by running the ETL over the real release and comparing the
+summary statistics before and after (see "Summary statistics" in the README).
 
 ## Changing what the ETL emits
 

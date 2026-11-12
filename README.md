@@ -16,14 +16,14 @@ Northwestern Medicine (NM) is a network of twelve hospitals located in Chicago a
 
 This pipeline extracts the NWICU dataset (from physionet, https://physionet.org/content/nwicu-northwestern-icu/0.1.0/) into the MEDS format.
 
-## Usage:
+## Usage
 
 With download:
 
 ```bash
 pip install NWICU_MEDS
-export DATASET_DOWNLOAD_USERNAME=...
-export DATASET_DOWNLOAD_PASSWORD=...
+export DATASET_DOWNLOAD_USERNAME=... # your PhysioNet username
+export DATASET_DOWNLOAD_PASSWORD=... # and password
 
 meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR
 ```
@@ -35,6 +35,21 @@ pip install NWICU_MEDS
 meds-extract-run spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR output_dir=$OUTPUT_DIR
 ```
 
+This one command runs the ETL and then enriches its code metadata with
+[suMEDS](https://github.com/rvandewater/SumMEDS) (installed with this package): the spec ends with
+suMEDS's `sumeds_enrich` stage, which adds LOINC codes for lab and chart items, ICD ancestors, OMOP
+Gender codes and parents among NWICU's diagnosis codes to `metadata/codes.parquet`. If it cannot
+(no internet, say), the ETL still succeeds, unenriched, and `suMEDS-enrich $OUTPUT_DIR` finishes it
+later. Add `skip_stages=[sumeds_enrich]` for the plain ETL. See
+[Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds).
+
+The output directory holds the MEDS dataset (`data/` and `metadata/`, per the
+[MEDS standard](https://medical-event-data-standard.github.io/)), with the dataset name and
+version stamped in `metadata/dataset.json`. `dataset.json` also gives the release's `license` and
+PhysioNet page (`description_uri`), and lists `hadm_id`, `icustay_id`, `emar_id` and
+`pharmacy_id`, the keys back to the raw tables, under `raw_source_id_columns`; MEDS-Extract lists
+every other extension column under `other_extension_columns`.
+
 ## Configuration
 
 **This package contains no ETL code.** The entire pipeline is one file,
@@ -43,13 +58,13 @@ meds-extract-run spec=NWICU do_download=false input_dir=$PHYSIONET_INPUT_DIR out
 
 Everything the old `pre_MEDS.py` did is now config:
 
-| Was                                                 | Now                                                                               |
-| --------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `fix_static_data` — earliest death time per subject | `_table.join` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
-| DOB from `anchor_year - anchor_age`                 | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str`                 |
-| `add_discharge_time_by_hadm_id`                     | `_table.join` on `hadm_id` for `dischtime`                                        |
-| `add_icd_diagnosis_dot`                             | inlined into the diagnosis `parent_codes` expression                              |
-| Post-hoc `codes.parquet` rebuild                    | `_metadata` blocks against NWICU's own `d_labitems` / `d_items`                   |
+| Was                                                 | Now                                                                                |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `fix_static_data` — earliest death time per subject | `_table.joins` with `cols: {deathtime: min}`, then `dod_final: $deathtime ?? $dod` |
+| DOB from `anchor_year - anchor_age`                 | `_table.cols`: `year_of_birth: ($anchor_year - $anchor_age)::str`                  |
+| `add_discharge_time_by_hadm_id`                     | `_table.joins` on `hadm_id` for `dischtime`                                        |
+| `add_icd_diagnosis_dot`                             | inlined into the diagnosis `parent_codes` expression                               |
+| Post-hoc `codes.parquet` rebuild                    | `_metadata` blocks against NWICU's own `d_labitems` / `d_items`                    |
 
 ### Demographics
 
@@ -59,7 +74,7 @@ annotations on the admission, so each is emitted as its own event — `INSURANCE
 no separate timestamp for them.
 
 Their nulls are deliberately **not** coalesced to `UNK`, unlike the composite codes elsewhere in
-this config. A null code component drops the row under MEDS-Extract 0.7, so a missing
+this config. A null code component drops the row under MEDS-Extract (since 0.7), so a missing
 demographic produces no event at all rather than minting a `RACE//UNK` code that would read as
 an observed category.
 
@@ -110,18 +125,74 @@ RxNorm is a job for a mapping tool, not the ETL.
 
 The ETL writes what NWICU itself records. Links to external vocabularies that NWICU does not
 record, and parents among NWICU's own codes, are added afterwards by
-[suMEDS](https://github.com/rvandewater/SumMEDS) with the rules file shipped in this package,
-`src/NWICU_MEDS/sumeds_rules.yaml`. The crosswalk tables and ontology packs come from suMEDS's
-versioned ontology data (sumeds-ontologies, pinned release), so this repository does not ship
-them, and no Athena download or LOINC account is needed:
+[suMEDS](https://github.com/rvandewater/SumMEDS). The package ships the rules for it,
+[`src/NWICU_MEDS/sumeds_rules.yaml`](src/NWICU_MEDS/sumeds_rules.yaml), registered in suMEDS's
+`sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `NWICU`, so
+`--rules NWICU` works for any suMEDS command. The spec runs them as its last stage:
 
-```bash
-suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o codes_enriched.parquet \
-  --rules "$(python -c 'from importlib.resources import files; print(files("NWICU_MEDS") / "sumeds_rules.yaml")')"
+```yaml
+etl:
+  post_stages:
+    - sumeds_enrich: {rules: NWICU}
 ```
 
-This needs suMEDS 0.4 or later (`pip install "sumeds>=0.4"`), the first release with ontology
-rules. The rules add:
+The stage replaces `metadata/codes.parquet` only once the enriched table is complete, and it stays
+valid MEDS code metadata. The crosswalk tables and ontology packs come from suMEDS's
+versioned ontology data (sumeds-ontologies, pinned release), fetched from GitHub on first use and
+cached, so this repository does not ship them, and no Athena download or LOINC account is needed.
+
+`metadata/dataset.json` says whether a build is enriched: `sumeds_enrichment.enriched` is `true`
+(with the rules, pack source and coverage) or `false` (with the error and the `retry` command).
+
+```bash
+jq .sumeds_enrichment.enriched $OUTPUT_DIR/metadata/dataset.json
+```
+
+Enrichment soft-fails: if it cannot run (a server without internet, for example), the ETL still
+succeeds with `metadata/codes.parquet` left exactly as MEDS-Extract writes it, and `dataset.json`
+records `"enriched": false`. The warning, with the command that finishes the enrichment, is in
+`$OUTPUT_DIR/.logs/pipeline.log`, not on the console. MEDS-Extract marks the stage done either
+way, so running `meds-extract-run` again does not retry it. Enrich the build afterwards, with the
+rules and options of the failed run:
+
+```bash
+suMEDS-enrich $OUTPUT_DIR
+# Air-gapped: from a copy of the sumeds-ontologies packs directory
+suMEDS-enrich $OUTPUT_DIR --ontology-source /path/to/sumeds-ontologies/ontologies --offline
+```
+
+For the plain, unenriched ETL, leave the stage out with `skip_stages=[sumeds_enrich]`:
+
+```bash
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR skip_stages=[sumeds_enrich]
+```
+
+The stage takes the `suMEDS-enrich` options, spelled with underscores. Set them for one run with
+`overrides=`, as `++stage_cfg.<option>` (the override reaches every stage of the pipeline, and only
+this one declares the option, hence the `++`):
+
+```bash
+# Make a failed enrichment fail the run (exit code 1):
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.strict=true']"
+# Also look codes up in your own OHDSI Athena download:
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.athena_csv=/path/to/athena']"
+# Read the packs from a local copy (or set SUMEDS_ONTOLOGY_SOURCE=/path/to/ontologies):
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.ontology_source=/path/to/ontologies']"
+```
+
+On a cluster whose compute nodes have no internet access, fill a cache on shared storage once from
+a login node, then run with `offline`, so nothing tries the network:
+
+```bash
+# The same cache on the login node and the compute nodes:
+export XDG_CACHE_HOME=/shared/project/cache
+# On the login node, download the pinned pack release (about 30 MB):
+suMEDS-enrich --prefetch --rules NWICU
+# On a compute node:
+meds-extract-run spec=NWICU output_dir=$OUTPUT_DIR "overrides=['++stage_cfg.offline=true']"
+```
+
+The rules add:
 
 - **LOINC for lab and chart items** (`nwicu-lab-loinc`, a crosswalk): `LAB//{itemid}//{unit}`
     gets `LOINC//<code>` in `parent_codes`, plus `vocabulary_id` and `concept_code`, for the 45
@@ -134,9 +205,10 @@ rules. The rules add:
     MIMIC-IV items share one LOINC code are used, and each link inherits the MIMIC-IV item's
     specimen and method; the table records both ends of every bridge.
 - **ICD diagnoses** (`nwicu-icd10cm-diagnoses`, `nwicu-icd9cm-diagnoses`, ontology rules): the
-    dotted ICD-10-CM / ICD-9-CM code with `vocabulary_id`, `concept_code` and every ancestor in
-    the pack (`ICD10CM//I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`), next to the ETL's own
-    `ICD10CM/…` parent.
+    dotted ICD-10-CM / ICD-9-CM code is validated against the pack and gives `vocabulary_id`,
+    `concept_code` and every ancestor in the pack. The ETL's own parent stays first, since suMEDS
+    counts `ICD10CM/I50.23` and `ICD10CM//I50.23` as the same entry, and the ancestors follow it
+    (`DIAGNOSIS//ICD//10//I5023` gets `ICD10CM/I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
 - **Gender** (`nwicu-gender`, an ontology rule): `GENDER//F` and `GENDER//M` get the OMOP Gender
     codes `Gender//F` and `Gender//M` (a tag: Gender has no public pack; with `--athena-csv`
     suMEDS validates them against Athena).
@@ -144,18 +216,24 @@ rules. The rules add:
     code of the table becomes the parent of another when its ICD code is the nearest ancestor
     present (`DIAGNOSIS//ICD//10//I5023` gets `DIAGNOSIS//ICD//10//I502` when both occur).
 
-The ETL alone no longer emits the LOINC parents of lab and chart codes (earlier builds of this
-branch wrote `LOINC/<code>` for the same 50 itemids), and it never emitted ICD ancestors,
-Gender codes or parents among NWICU codes; suMEDS supplies them. suMEDS never removes or
-rewrites the ETL's own parents (`ICD10CM/…`, `NDC/…`) or descriptions.
+Every parent that a pack (or Athena) knows is named in `parent_names`, a map from the parent
+code to its name (`map<string, string>` in parquet; suMEDS 0.6 replaced the earlier list aligned
+with `parent_codes`). Tags and parents among NWICU codes have no entry; the latter are described
+in their own rows.
+
+The ETL alone no longer emits the LOINC parents of lab and chart codes (earlier builds wrote
+`LOINC/<code>` for the same 50 itemids), and it never emitted ICD ancestors, Gender codes or
+parents among NWICU codes; suMEDS supplies them. suMEDS never removes or rewrites the ETL's own
+parents (`ICD10CM/…`, `NDC/…`) or descriptions: it only fills empty fields and appends parents.
 
 ## Summary statistics
 
 [`tests/regression/full_summary_stats.json`](tests/regression/full_summary_stats.json) is a
 [meds_summary_stats](https://github.com/Medical-Event-Data-Standard/meds_summary_stats) fingerprint of
-the MEDS dataset this ETL builds from the full NWICU 0.1.0 release: subject, event and measurement
-counts, digests of the code vocabulary, per-subject, value and time distributions, code-metadata
-coverage, the splits and the schema. It names no code and reports no cell of fewer than 20 subjects and
+the MEDS dataset this ETL builds from the full NWICU 0.1.0 release. `scripts/summary_stats.sh` builds
+it with `meds-extract-run spec=NWICU`, so its code-metadata coverage includes the suMEDS enrichment. It
+covers subject, event and measurement counts, digests of the code vocabulary, per-subject, value and
+time distributions, code-metadata coverage, the splits and the schema. It names no code and reports no cell of fewer than 20 subjects and
 no minimum or maximum, which is what makes it safe to publish. Because it is committed next to the ETL,
 its diff shows what an ETL change did to the output, and two ETL versions can be compared without
 access to the data.
@@ -169,13 +247,14 @@ scripts/summary_stats.sh full --input-dir $PHYSIONET_INPUT_DIR
 scripts/summary_stats.sh full --meds-dir $MEDS_OUTPUT_DIR
 ```
 
-Both print how the statistics changed against the committed baseline before overwriting it. Add
+Both print how the statistics changed against the committed baseline before overwriting it, and
+refuse a build whose enrichment failed (finish it with `suMEDS-enrich` first). Add
 `--compare` to check a build without writing anything; it exits 1 when
 [`tests/regression/policy.yaml`](tests/regression/policy.yaml) flags an error. Rebuilding the same
 commit reproduces the baseline exactly, so any finding is a change in the output. CI cannot rebuild the
 credentialed release, so the [Summary stats workflow](.github/workflows/summary-stats.yaml) only warns
-when a pull request changes `src/` without regenerating the baseline. A MEDS-Extract or polars upgrade
-can also move the output, so check it with `--compare`.
+when a pull request changes `src/` (the config or the suMEDS rules) without regenerating the baseline. A
+MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it with `--compare`.
 
 ## Citation
 
