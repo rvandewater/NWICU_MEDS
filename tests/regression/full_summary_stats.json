@@ -18,15 +18,44 @@
     "n_data_codes_missing_from_metadata": 0,
     "n_metadata_codes_absent_from_data": 0,
     "n_with_description": 27463,
-    "n_with_parent_codes": 13375,
+    "n_with_parent_codes": 13525,
     "ontology": {
       "by_vocabulary": {
+        "DIAGNOSIS": {
+          "keys_digest": "sha256:df60665231b7d3b9a54880715e7011d7734dd492189d196d1ea592fab0b46678",
+          "n_child_codes": 160,
+          "n_distinct_keys": 92,
+          "n_measurements": 10232,
+          "n_subjects": 6664,
+          "recognized": false
+        },
+        "Gender": {
+          "keys_digest": "sha256:e4b45da6fe1dc80b451f36d47db88ec674acc85ccd94f710db905a0aa75b53ca",
+          "n_child_codes": 2,
+          "n_distinct_keys": 2,
+          "n_measurements": 25921,
+          "n_subjects": 25921,
+          "recognized": true
+        },
         "ICD10CM": {
-          "keys_digest": "sha256:81510b7d17311f149e1b5c69acdf263dfda8fe0ddf61961661287be07f2d9014",
+          "keys_digest": "sha256:f6f35f9394cc180cb3d5288216fbeb4cd6ad2690e96db4feacb811e1006b8074",
           "n_child_codes": 8086,
-          "n_distinct_keys": 8086,
+          "n_distinct_keys": 13648,
           "n_measurements": 313070,
           "n_subjects": 25786,
+          "recognized": true
+        },
+        "LOINC": {
+          "keys_digest": "sha256:6721622be69e5195b51dc0e72e185999c8ef727b9ea365ceb99fde324846135d",
+          "n_child_codes": 148,
+          "n_distinct_keys": 48,
+          "n_measurements": 16689945,
+          "n_subjects": 25916,
+          "numeric": {
+            "mean": 19611.5,
+            "n_finite": 16677336,
+            "std": 441697.0
+          },
           "recognized": true
         },
         "NDC": {
@@ -44,38 +73,38 @@
         }
       },
       "coverage": {
-        "frac_measurements_mapped": 0.0681619,
-        "frac_observed_codes_with_parents": 0.487019,
-        "n_measurements_mapped": 3477528,
-        "n_measurements_unmapped": 47541088,
+        "frac_measurements_mapped": 0.395804,
+        "frac_observed_codes_with_parents": 0.492481,
+        "n_measurements_mapped": 20193394,
+        "n_measurements_unmapped": 30825222,
         "n_observed_codes": 27463,
-        "n_observed_codes_with_parents": 13375,
-        "n_observed_codes_without_parents": 14088
+        "n_observed_codes_with_parents": 13525,
+        "n_observed_codes_without_parents": 13938
       },
-      "n_codes_in_multiple_vocabularies": 0,
-      "n_codes_with_parents": 13375,
-      "n_distinct_parents": 10477,
-      "n_parent_links": 13377,
+      "n_codes_in_multiple_vocabularies": 160,
+      "n_codes_with_parents": 13525,
+      "n_distinct_parents": 16273,
+      "n_parent_links": 32372,
       "n_parents_without_vocabulary": 0,
-      "n_vocabularies": 2,
-      "n_vocabularies_recognized": 2,
+      "n_vocabularies": 5,
+      "n_vocabularies_recognized": 4,
       "parents_per_code": {
-        "mean": 0.487092,
+        "mean": 1.17875,
         "n": 27463,
         "quantiles": {
           "p1": 0.0,
           "p25": 0.0,
           "p5": 0.0,
           "p50": 0.0,
-          "p75": 1.0,
-          "p95": 1.0,
-          "p99": 1.0
+          "p75": 2.0,
+          "p95": 5.0,
+          "p99": 5.0
         },
-        "std": 0.499988
+        "std": 1.56305
       },
       "present": true,
       "vocabularies_per_code": {
-        "mean": 0.487019,
+        "mean": 0.498307,
         "n": 27463,
         "quantiles": {
           "p1": 0.0,
@@ -86,7 +115,7 @@
           "p95": 1.0,
           "p99": 1.0
         },
-        "std": 0.499841
+        "std": 0.511526
       }
     },
     "present": true,
@@ -212,13 +241,55 @@
     }
   },
   "dataset": {
-    "created_at": "2026-11-11T00:31:14.511479+00:00",
+    "created_at": "2026-11-12T00:50:07.154213+00:00",
     "dataset_name": "NWICU",
-    "dataset_version": "0.1.0:1.0.1",
+    "dataset_version": "0.1.0:1.1.0",
+    "description_uri": "https://physionet.org/content/nwicu-northwestern-icu/0.1.0/",
     "etl_name": "MEDS_transforms",
     "etl_version": "0.7.0",
+    "license": "PhysioNet Credentialed Health Data License 1.5.0",
     "meds_version": "0.4.1",
-    "present": true
+    "other_extension_columns": [
+      "source_block",
+      "emar_seq",
+      "priority"
+    ],
+    "present": true,
+    "raw_source_id_columns": [
+      "hadm_id",
+      "icustay_id",
+      "emar_id",
+      "pharmacy_id"
+    ],
+    "sumeds_enrichment": {
+      "athena": false,
+      "coverage": {
+        "codes": 27463,
+        "described": [
+          27463,
+          27463
+        ],
+        "with_parent_codes": [
+          13375,
+          13525
+        ]
+      },
+      "enriched": true,
+      "enriched_at": "2026-11-12T00:50:15Z",
+      "ontology_source": "rvandewater/sumeds-ontologies@v0.2.0",
+      "options": {
+        "child_codes": false,
+        "child_depth": 3,
+        "exclude_self_parent_code": false,
+        "loinc_hierarchy": false,
+        "packs": true,
+        "parent_codes": true,
+        "sibling_codes": false
+      },
+      "rules": "NWICU",
+      "rules_sha256": "2dc3a8bfe5185ce09a3bd67a4db47a945f984fa91a1f66bcdb8adc89fcf59386",
+      "sumeds_version": "0.6.3"
+    }
   },
   "dataset_digest": {
     "by_file": {
@@ -249,28 +320,34 @@
       "data/tuning/0.parquet": "sha256:29165a6a760bfc03b9e2cfcd68ddb6e949219db4c1403b7872abf84b6e5beafe",
       "data/tuning/1.parquet": "sha256:6ea008ca8badf6ce910815b747b1a36128a956798ea5688cd3248870f2367768",
       "data/tuning/2.parquet": "sha256:e2e658f8e73bd0f674c5c6bfbbad2fcd3da93888f87150df6df4a4cebc9c9c6b",
-      "metadata/codes.parquet": "sha256:a6c09afdee658e6c1eb3ecd509c35d665176bc3c3718f913f26e86e600c66468",
-      "metadata/dataset.json": "sha256:af53c4755525dbdca360c3eb1fb7f4d02ad9351cea75f3337f31cc913762e2e5",
+      "metadata/codes.parquet": "sha256:c7c1b122a10f7421c9fa9859cf0c2e44af1a90af2780d741bf46a53a9f842408",
+      "metadata/dataset.json": "sha256:674905ca0f9fba862938a1decdc793daaf3706a943b263c48e5182bfbbbabc5f",
       "metadata/subject_splits.parquet": "sha256:8231b5dd5037ebb844165536872469ff61c2f91589ef33590136b967aef49f08"
     },
-    "code_metadata": "sha256:0d2504363321153cda5ea1be65a46b56de444192c061d07840f5933f3f8f3415",
-    "combined": "sha256:fcca3961fa571c0e1c82cd482e8cc7d65f6b9d3ed65d14786b35cf9a27d3786d",
+    "code_metadata": "sha256:5781ad318795a8ce82b163ccd4f9754de61ca740874e7b739bc0b2103a9cb8bd",
+    "combined": "sha256:b3da2fe01ef404b9de0b8011182d8c215e35cc9a8033a47148bcc044c4ebef08",
     "data": {
       "digest": "sha256:90ea73be91aa2c842f7d9744d5e1b76f3d26ac448801a76ae57479ea9dee3dae",
       "n_files": 27
     },
-    "dataset_metadata": "sha256:d0fada5bba2c39b73df62d824c8f62aee7aaf07def6462bebe945849b491f8b2",
+    "dataset_metadata": "sha256:8dd70a52830b2e54757991618e77615ae84828c95bd8760ccc228d7d36919500",
     "method": "files",
     "n_files": 30,
     "subject_splits": "sha256:89a8e11536b5531b7854187c3437ce68cd82440bfbf43f5c1e33281b5f015ff6"
   },
-  "extracted_at": "2026-11-11T00:31:42.856021",
+  "extracted_at": "2026-11-12T00:50:17.997875",
   "layout": {
     "code_metadata_columns": {
       "code": "String",
       "code_template": "String",
+      "concept_code": "String",
+      "concept_id": "Int64",
       "description": "String",
-      "parent_codes": "List(String)"
+      "domain_id": "String",
+      "parent_codes": "List(String)",
+      "parent_names": "Map(String, String)",
+      "standard_concept": "String",
+      "vocabulary_id": "String"
     },
     "column_dtype_conflicts": {},
     "column_presence": {
