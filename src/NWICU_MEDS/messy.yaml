@@ -157,6 +157,10 @@ data/nw_hosp/labevents:
       data/nw_hosp/d_labitems:
         itemid: $itemid
         description: $label
+      # The unit of numeric_value, as recorded. It is also the code's last segment, so it is
+      # one value per code; a null valueuom (code `//UNK`) leaves the unit null.
+      _self:
+        unit: $valueuom
 
 data/nw_hosp/patients:
   _table:
@@ -219,6 +223,8 @@ data/nw_hosp/prescriptions:
         description: >-
           f"Prescription start: {$drug}; route: {$route ?? 'UNK'}; dose unit: {$dose_unit_rx ?? 'UNK'}
           (NWICU prescriptions.drug, route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
+        # The unit of numeric_value (dose_val_rx), as recorded; also the code's last segment.
+        unit: $dose_unit_rx
         parent_codes: 'f"NDC/{$_ndc_real}" if $_ndc_real == $_ndc_real'
   prescription_stop:
     code: f"MEDICATION//STOP//{$drug}//{$route ?? 'UNK'}"
@@ -266,6 +272,9 @@ data/nw_icu/chartevents:
       data/nw_icu/d_items:
         itemid: $itemid
         description: $label
+      # As in labevents: the recorded valueuom, also the code's last segment.
+      _self:
+        unit: $valueuom
 
 data/nw_icu/procedureevents:
   start:

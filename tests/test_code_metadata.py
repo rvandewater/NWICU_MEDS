@@ -8,6 +8,7 @@ import os
 import re
 from pathlib import Path
 
+import polars as pl
 import pyarrow.parquet as pq
 import pytest
 import yaml
@@ -96,3 +97,26 @@ def test_built_codes_metadata():
     assert n_malformed == 0, (
         f"{n_malformed} parent codes are not of the form <vocabulary>/<code>"
     )
+
+
+def test_numeric_codes_carry_their_recorded_unit(codes):
+    """Lab, chart and prescription-start codes get a `unit` column with the unit as recorded.
+
+    The unit is also the code's last segment, so it is one value per code; a code whose unit is
+    null (`//UNK`) gets no unit. MEDS-Extract writes `_metadata` outputs as lists of strings.
+    """
+    assert "unit" in codes.columns
+    units = dict(codes.select("code", pl.col("unit").list.first()).iter_rows())
+    assert units["LAB//900001//mg/dL"] == "mg/dL"  # labevents
+    assert units["LAB//900002//mEq/L"] == "mEq/L"
+    assert units["LAB//800001//bpm"] == "bpm"  # chartevents
+    assert units["MEDICATION//START//Synthetic drug A//PO//mg"] == "mg"  # prescriptions
+    assert units["MEDICATION//START//Synthetic drug C//IV//mL"] == "mL"
+    assert units["LAB//900003//UNK"] is None
+    # Codes without a numeric value carry no unit.
+    assert units["GENDER//F"] is None
+    assert units["MEDICATION//STOP//Synthetic drug A//PO"] is None
+    # Labels still come from the item dictionaries next to the `_self` unit block.
+    descriptions = dict(codes.select("code", "description").iter_rows())
+    assert descriptions["LAB//900001//mg/dL"] == "Synthetic lab A"
+    assert descriptions["LAB//800001//bpm"] == "Synthetic chart item A"
