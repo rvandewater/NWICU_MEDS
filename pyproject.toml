@@ -54,6 +54,11 @@ NWICU = "NWICU_MEDS:messy.yaml"
 
 # Registers the suMEDS rules under the same name, so the spec's `sumeds_enrich` stage and
 # `--rules NWICU` find them.
+# The post-stage that makes `unit` in codes.parquet one string per code (and links codes that
+# differ only in their unit), so the spec can declare it in `etl.post_stages`.
+[project.entry-points."MEDS_transforms.stages"]
+nwicu_collapse_unit_metadata = "NWICU_MEDS.unit_metadata:main"
+
 [project.entry-points."sumeds.rules"]
 NWICU = "NWICU_MEDS:sumeds_rules.yaml"
 

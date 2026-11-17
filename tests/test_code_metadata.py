@@ -91,8 +91,14 @@ def test_built_codes_metadata():
         f"{n_undescribed} of {len(df['code'])} codes have no description"
     )
     # `<vocabulary>/<code>`; the vocabulary is not pinned, since synthetic data feeds it arbitrary values.
+    # The other parents are in-dataset: the code without the unit, of codes that differ only in
+    # their unit (test_unit_siblings_get_their_stem_as_parent_and_row).
+    in_dataset = set(df["code"])
     n_malformed = sum(
-        not re.fullmatch(r"\w+/\S+", p) for ps in df["parent_codes"] if ps for p in ps
+        not re.fullmatch(r"\w+/\S+", p) and p not in in_dataset
+        for ps in df["parent_codes"]
+        if ps
+        for p in ps
     )
     assert n_malformed == 0, (
         f"{n_malformed} parent codes are not of the form <vocabulary>/<code>"
@@ -103,10 +109,11 @@ def test_numeric_codes_carry_their_recorded_unit(codes):
     """Lab, chart and prescription-start codes get a `unit` column with the unit as recorded.
 
     The unit is also the code's last segment, so it is one value per code; a code whose unit is
-    null (`//UNK`) gets no unit. MEDS-Extract writes `_metadata` outputs as lists of strings.
+    null (`//UNK`) gets no unit. The `nwicu_collapse_unit_metadata` post-stage turns the list
+    MEDS-Extract writes into one string per code.
     """
-    assert "unit" in codes.columns
-    units = dict(codes.select("code", pl.col("unit").list.first()).iter_rows())
+    assert codes.schema["unit"] == pl.String
+    units = dict(codes.select("code", "unit").iter_rows())
     assert units["LAB//900001//mg/dL"] == "mg/dL"  # labevents
     assert units["LAB//900002//mEq/L"] == "mEq/L"
     assert units["LAB//800001//bpm"] == "bpm"  # chartevents
@@ -120,3 +127,29 @@ def test_numeric_codes_carry_their_recorded_unit(codes):
     descriptions = dict(codes.select("code", "description").iter_rows())
     assert descriptions["LAB//900001//mg/dL"] == "Synthetic lab A"
     assert descriptions["LAB//800001//bpm"] == "Synthetic chart item A"
+
+
+def test_unit_siblings_get_their_stem_as_parent_and_row(codes):
+    """Codes that differ only in their unit share the code without the unit as parent, and that
+    code gets a row: no unit, the description its siblings share (without their unit, where that
+    is the only difference) and the parents they all have."""
+    rows = {row["code"]: row for row in codes.iter_rows(named=True)}
+    lab = "LAB//900001"
+    for code in (f"{lab}//mg/dL", f"{lab}//mmol/L"):
+        assert rows[code]["parent_codes"] == [lab], code
+    assert rows[lab]["unit"] is None
+    assert rows[lab]["description"] == "Synthetic lab A"
+    assert not rows[lab]["parent_codes"]
+
+    drug = "MEDICATION//START//Synthetic drug A//PO"
+    for code in (f"{drug}//mg", f"{drug}//mcg"):
+        assert rows[code]["parent_codes"] == ["NDC/12345678901", drug], code
+    assert rows[drug]["unit"] is None
+    assert rows[drug]["parent_codes"] == ["NDC/12345678901"]
+    assert rows[drug]["description"] == (
+        "Prescription start: Synthetic drug A; route: PO; dose unit: (NWICU prescriptions.drug, "
+        "route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
+    )
+    # A unit-suffixed code without a sibling gets neither.
+    assert "LAB//900002" not in rows
+    assert not rows["LAB//900002//mEq/L"]["parent_codes"]

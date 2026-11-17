@@ -100,11 +100,23 @@ Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 | `MEDICATION//…` (eMAR), `HOSPITAL_ADMISSION`, `HOSPITAL_DISCHARGE`, `INSURANCE`, `LANGUAGE`, `MARITAL_STATUS`, `RACE`, `GENDER`, `ICU_ADMISSION`, `ICU_DISCHARGE` | `_self` template over the code's components                                              | the column each component comes from, with its meaning from the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/modules/) (source: [MIT-LCP/mimic-website](https://github.com/MIT-LCP/mimic-website), MIT, 8182227), whose structure NWICU retains ([NWICU 0.1.0 project page](https://physionet.org/content/nwicu-northwestern-icu/0.1.0/)) |
 | `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text, via a constant code column (below)                                         | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
 
-**Units.** Every code that carries a `numeric_value` also gets a `unit` column, the unit as
-recorded (not normalized): `labevents.valueuom` and `chartevents.valueuom` for `LAB//…` (a `_self`
-block next to the dictionary block), `prescriptions.dose_unit_rx` for `MEDICATION//START//…`. In
-NWICU the unit is already the code's last segment, so each code has one unit and the codes are
-unchanged; a code whose unit segment is `UNK` (a null unit) has a null `unit`.
+**Units.** Every code that carries a `numeric_value` also gets a `unit` column: a string, the unit
+of the code's numeric values as recorded (not normalized), one per code; MEDS does not standardise
+this column. The sources are `labevents.valueuom` and `chartevents.valueuom` for `LAB//…` (a
+`_self` block next to the dictionary block) and `prescriptions.dose_unit_rx` for
+`MEDICATION//START//…`. In NWICU the unit is already the code's last segment, so each code has one
+unit and the codes are unchanged; a code whose unit segment is `UNK` (a null unit) has a null
+`unit`. `d_items.unitname` states a unit for the 13 chart codes without one, but none of their rows
+has a numeric value, so it is not used; `d_labitems` has no unit column.
+
+MEDS-Extract writes extracted metadata as a list of the distinct values per code, so the first
+post-stage, `nwicu_collapse_unit_metadata` (`src/NWICU_MEDS/unit_metadata.py`, before suMEDS),
+makes `unit` one string per code and fails if any code has more than one unit. It also gives codes
+that differ only in their unit (`LAB//{itemid}//mg/dL` and `…//mmol/L`) the code without the unit
+(`LAB//{itemid}`) as an in-dataset parent in `parent_codes`, and adds a row for that code: no
+unit, the description its siblings share (for prescription starts, whose descriptions differ only
+by the dose unit, that description without it) and the vocabulary parents they all have. On NWICU
+0.1.0 that is 477 groups (142 lab items, 335 drug/route pairs; 1,135 codes) and 477 added rows.
 
 The item dictionaries replace a Python rebuild that existed because the MIMIC-IV crosswalks are
 keyed on MIMIC itemids that never match NWICU's, a mismatch that now surfaces as a WARNING instead

@@ -157,6 +157,7 @@ def test_rules_match_the_codes_the_etl_writes(
         "GENDER//M": "nwicu-gender",
         "LAB//800001//bpm": "nwicu-lab-loinc",
         "LAB//900001//mg/dL": "nwicu-lab-loinc",
+        "LAB//900001//mmol/L": "nwicu-lab-loinc",
         "LAB//900002//mEq/L": "nwicu-lab-loinc",
         "LAB//900003//UNK": "nwicu-lab-loinc",
     }

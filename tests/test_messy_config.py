@@ -113,7 +113,8 @@ def test_etl_block(cfg: MessyConfig):
         f"https://physionet.org/content/nwicu-northwestern-icu/{cfg.sources_version}/"
     )
     assert [(s.name, s.options) for s in cfg.etl.post_stages] == [
-        ("sumeds_enrich", {"rules": PIPELINE_NAME})
+        ("nwicu_collapse_unit_metadata", {}),
+        ("sumeds_enrich", {"rules": PIPELINE_NAME}),
     ]
 
 

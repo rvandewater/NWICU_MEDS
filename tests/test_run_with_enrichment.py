@@ -246,7 +246,10 @@ def test_lab_and_chart_items_get_loinc_from_the_crosswalk(enriched_rows: dict):
         row = enriched_rows[code]
         assert row["vocabulary_id"] == "LOINC", code
         assert row["concept_code"] == loinc, code
-        assert row["parent_codes"] == [f"LOINC//{loinc}"], code
+        # 900001 also has a mmol/L code, so its in-dataset unit-sibling parent comes first (the
+        # post-stage that adds it runs before suMEDS); suMEDS keeps it and names only LOINC.
+        sibling = ["LAB//900001"] if code.startswith("LAB//900001//") else []
+        assert row["parent_codes"] == [*sibling, f"LOINC//{loinc}"], code
         assert _names(row) == {f"LOINC//{loinc}": title("LOINC", loinc)}, code
     # The dictionary label from the ETL is kept.
     assert enriched_rows["LAB//900001//mg/dL"]["description"] == "Synthetic lab A"
@@ -299,7 +302,10 @@ def test_gender_codes_are_tagged(enriched_rows: dict):
 def test_codes_without_a_rule_are_left_alone(enriched_rows: dict):
     # NDC has no pack, so the ETL's NDC parent is neither validated nor extended.
     row = enriched_rows["MEDICATION//START//Synthetic drug A//PO//mg"]
-    assert row["parent_codes"] == ["NDC/12345678901"]
+    assert row["parent_codes"] == [
+        "NDC/12345678901",
+        "MEDICATION//START//Synthetic drug A//PO",
+    ]
     assert row["vocabulary_id"] is None
     for code in ("MEDS_BIRTH", "HOSPITAL_DISCHARGE//HOME", "PROCEDURE//START//800002"):
         assert not enriched_rows[code]["parent_codes"], code
