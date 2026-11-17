@@ -15,6 +15,7 @@ import yaml
 from meds import CodeMetadataSchema
 
 from NWICU_MEDS import MESSY_CFG
+from NWICU_MEDS.unit_metadata import unit_sibling_stems, unit_stem_rows
 
 # The dictionary blocks of the two events that emit `LAB//{itemid}//{unit}` codes.
 LAB_BLOCKS = {
@@ -79,6 +80,11 @@ def test_lab_codes_get_no_vocabulary_parents_from_the_etl(raw_cfg: dict):
 def test_built_codes_metadata():
     """A finished extraction is valid MEDS code metadata with every code described.
 
+    The one exception is by design: the row of a unit-sibling stem has no description when its
+    siblings share none (:func:`NWICU_MEDS.unit_metadata.unit_stem_rows`). That does not happen in
+    the real release, but MESSY-synth gives one item id several labels, so the synthetic build has
+    such stems. Each undescribed code must be one of them, recomputed from its siblings.
+
     Failure messages report counts only, never codes, so this is safe to run on a credentialed build.
     """
     codes_fp = Path(os.environ["NWICU_MEDS_OUTPUT_DIR"]) / "metadata" / "codes.parquet"
@@ -86,9 +92,26 @@ def test_built_codes_metadata():
     CodeMetadataSchema.validate(table)
     df = table.to_pydict()
     assert df["code"], "codes.parquet is empty"
-    n_undescribed = sum(not d for d in df["description"])
+    undescribed = {
+        c for c, d in zip(df["code"], df["description"], strict=True) if not d
+    }
+    stems_without_description = set()
+    if undescribed and "unit" in df:
+        codes = pl.from_arrow(
+            table.select(["code", "description", "parent_codes", "unit"])
+        )
+        stems = unit_sibling_stems(codes["code"], codes["unit"]).drop_nulls().unique()
+        siblings = codes.filter(~pl.col("code").is_in(stems.implode()))
+        stems_without_description = {
+            row["code"]
+            for row in unit_stem_rows(siblings)
+            if row["description"] is None
+        }
+    n_undescribed = len(undescribed - stems_without_description)
     assert n_undescribed == 0, (
-        f"{n_undescribed} of {len(df['code'])} codes have no description"
+        f"{n_undescribed} of {len(df['code'])} codes have no description "
+        f"(not counting {len(undescribed & stems_without_description)} unit-sibling stems whose "
+        "siblings share no description)"
     )
     # `<vocabulary>/<code>`; the vocabulary is not pinned, since synthetic data feeds it arbitrary values.
     # The other parents are in-dataset: the code without the unit, of codes that differ only in
