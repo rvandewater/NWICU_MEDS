@@ -109,12 +109,11 @@ unit and the codes are unchanged; a code whose unit segment is `UNK` (a null uni
 `unit`. `d_items.unitname` states a unit for the 13 chart codes without one, but none of their rows
 has a numeric value, so it is not used; `d_labitems` has no unit column.
 
-MEDS-Extract writes extracted metadata as a list of the distinct values per code, so the first
-post-stage, `nwicu_collapse_unit_metadata` (`src/NWICU_MEDS/unit_metadata.py`, before suMEDS),
-makes `unit` one string per code and fails if any code has more than one unit. It also gives codes
-that differ only in their unit (`LAB//{itemid}//mg/dL` and `…//mmol/L`) the code without the unit
-(`LAB//{itemid}`) as an in-dataset parent in `parent_codes`, and adds a row for that code: no
-unit, the description its siblings share (for prescription starts, whose descriptions differ only
+MEDS-Extract (since 0.9.0) writes `unit` as one string per code and fails if any code has more
+than one unit. The first post-stage, `nwicu_unit_metadata` (`src/NWICU_MEDS/unit_metadata.py`,
+before suMEDS), gives codes that differ only in their unit (`LAB//{itemid}//mg/dL` and
+`…//mmol/L`) the code without the unit (`LAB//{itemid}`) as an in-dataset parent in
+`parent_codes`, and adds a row for that code: no unit, the description its siblings share (for prescription starts, whose descriptions differ only
 by the dose unit, that description without it) and the vocabulary parents they all have. On NWICU
 0.1.0 that is 477 groups (142 lab items, 335 drug/route pairs; 1,135 codes) and 477 added rows.
 

@@ -132,8 +132,7 @@ def test_numeric_codes_carry_their_recorded_unit(codes):
     """Lab, chart and prescription-start codes get a `unit` column with the unit as recorded.
 
     The unit is also the code's last segment, so it is one value per code; a code whose unit is
-    null (`//UNK`) gets no unit. The `nwicu_collapse_unit_metadata` post-stage turns the list
-    MEDS-Extract writes into one string per code.
+    null (`//UNK`) gets no unit. MEDS-Extract writes it as one string per code.
     """
     assert codes.schema["unit"] == pl.String
     units = dict(codes.select("code", "unit").iter_rows())
