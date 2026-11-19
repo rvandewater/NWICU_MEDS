@@ -101,11 +101,13 @@ Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 | `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text, via a constant code column (below)                                         | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
 
 **Units.** Every code that carries a `numeric_value` also gets a `unit` column: a string, the unit
-of the code's numeric values as recorded (not normalized), one per code; MEDS does not standardise
-this column. The sources are `labevents.valueuom` and `chartevents.valueuom` for `LAB//…` (a
+of the code's numeric values, one per code, written in [UCUM](https://ucum.org/) by suMEDS's
+`sumeds_normalize_units` post-stage (`mEq/L` becomes `meq/L`, `bpm` becomes `{beats}/min`). The
+spelling as recorded stays in `unit_source_value`, and a spelling suMEDS does not know is kept as it
+is. The sources are `labevents.valueuom` and `chartevents.valueuom` for `LAB//…` (a
 `_self` block next to the dictionary block) and `prescriptions.dose_unit_rx` for
-`MEDICATION//START//…`. In NWICU the unit is already the code's last segment, so each code has one
-unit and the codes are unchanged; a code whose unit segment is `UNK` (a null unit) has a null
+`MEDICATION//START//…`. In NWICU the unit as recorded is already the code's last segment, so each code
+has one unit and the codes are unchanged (`LAB//{itemid}//mEq/L` keeps its name); a code whose unit segment is `UNK` (a null unit) has a null
 `unit`. `d_items.unitname` states a unit for the 13 chart codes without one, but none of their rows
 has a numeric value, so it is not used; `d_labitems` has no unit column.
 
@@ -145,11 +147,14 @@ record, and parents among NWICU's own codes, are added afterwards by
 [suMEDS](https://github.com/rvandewater/SumMEDS). The package ships the rules for it,
 [`src/NWICU_MEDS/sumeds_rules.yaml`](src/NWICU_MEDS/sumeds_rules.yaml), registered in suMEDS's
 `sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `NWICU`, so
-`--rules NWICU` works for any suMEDS command. The spec runs them as its last stage:
+`--rules NWICU` works for any suMEDS command. The spec runs them as its last stage, after
+`nwicu_unit_metadata` and suMEDS's `sumeds_normalize_units` (see **Units** above):
 
 ```yaml
 etl:
   post_stages:
+    - nwicu_unit_metadata
+    - sumeds_normalize_units
     - sumeds_enrich: {rules: NWICU}
 ```
 

@@ -129,18 +129,27 @@ def test_built_codes_metadata():
 
 
 def test_numeric_codes_carry_their_recorded_unit(codes):
-    """Lab, chart and prescription-start codes get a `unit` column with the unit as recorded.
+    """Lab, chart and prescription-start codes get a `unit` column with the unit as recorded,
+    written in UCUM.
 
-    The unit is also the code's last segment, so it is one value per code; a code whose unit is
-    null (`//UNK`) gets no unit. MEDS-Extract writes it as one string per code.
+    The unit as recorded is also the code's last segment, so it is one value per code; a code whose
+    unit is null (`//UNK`) gets no unit. MEDS-Extract writes it as one string per code; suMEDS's
+    `sumeds_normalize_units` then writes it in UCUM and keeps the spelling as recorded in
+    `unit_source_value`. The code keeps its name.
     """
     assert codes.schema["unit"] == pl.String
     units = dict(codes.select("code", "unit").iter_rows())
-    assert units["LAB//900001//mg/dL"] == "mg/dL"  # labevents
-    assert units["LAB//900002//mEq/L"] == "mEq/L"
-    assert units["LAB//800001//bpm"] == "bpm"  # chartevents
-    assert units["MEDICATION//START//Synthetic drug A//PO//mg"] == "mg"  # prescriptions
-    assert units["MEDICATION//START//Synthetic drug C//IV//mL"] == "mL"
+    recorded = dict(codes.select("code", "unit_source_value").iter_rows())
+    # code -> (unit in UCUM, unit as recorded)
+    expected = {
+        "LAB//900001//mg/dL": ("mg/dL", "mg/dL"),  # labevents
+        "LAB//900002//mEq/L": ("meq/L", "mEq/L"),
+        "LAB//800001//bpm": ("{beats}/min", "bpm"),  # chartevents
+        "MEDICATION//START//Synthetic drug A//PO//mg": ("mg", "mg"),  # prescriptions
+        "MEDICATION//START//Synthetic drug C//IV//mL": ("mL", "mL"),
+    }
+    for code, unit in expected.items():
+        assert (units[code], recorded[code]) == unit, code
     assert units["LAB//900003//UNK"] is None
     # Codes without a numeric value carry no unit.
     assert units["GENDER//F"] is None

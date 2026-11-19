@@ -104,7 +104,7 @@ def test_physionet_source_targets_nwicu_release(cfg: MessyConfig, dummy_credenti
 
 def test_etl_block(cfg: MessyConfig):
     """The reserved `etl:` block carries the dataset identity, stage options, the `dataset.json`
-    descriptors and the suMEDS enrichment stage that runs after the ETL."""
+    descriptors and the stages that run after the ETL: unit siblings, UCUM units, suMEDS enrichment."""
     assert cfg.etl.dataset_name == "NWICU"
     options = cfg.etl.stage_options
     assert options["n_subjects_per_shard"] == 1000
@@ -114,6 +114,7 @@ def test_etl_block(cfg: MessyConfig):
     )
     assert [(s.name, s.options) for s in cfg.etl.post_stages] == [
         ("nwicu_unit_metadata", {}),
+        ("sumeds_normalize_units", {}),
         ("sumeds_enrich", {"rules": PIPELINE_NAME}),
     ]
 
