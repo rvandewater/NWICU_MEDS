@@ -212,8 +212,8 @@ data/nw_hosp/patients:
       _self:
         description: >-
           "Death (MEDS death code). Time: the subject's earliest NWICU admissions.deathtime, else
-          patients.dod; for a discharge to a location starting EXPIRED without a deathtime, the
-          admissions.dischtime"
+          patients.dod; for a subject with neither, the admissions.dischtime of a discharge to a
+          location starting EXPIRED"
 
 data/nw_hosp/prescriptions:
   _table:
