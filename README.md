@@ -128,7 +128,9 @@ is. The sources are `labevents.valueuom` and `chartevents.valueuom` for `LAB//�
 `_self` block next to the dictionary block) and `prescriptions.dose_unit_rx` for
 `MEDICATION//START//…`. In NWICU the unit as recorded is already the code's last segment, so each code
 has one unit and the codes are unchanged (`LAB//{itemid}//mEq/L` keeps its name); a code whose unit segment is `UNK` (a null unit) has a null
-`unit`. `d_items.unitname` states a unit for the 13 chart codes without one, but none of their rows
+`unit`. The unit in a code is stripped of surrounding whitespace; missing or blank is `UNK`.
+MEDS-Extract compares units the same way when it writes `unit` (stripped, blanks dropped), so
+` mg/dL` and `mg/dL` give one code. `d_items.unitname` states a unit for the 13 chart codes without one, but none of their rows
 has a numeric value, so it is not used; `d_labitems` has no unit column.
 
 MEDS-Extract (since 0.9.0) writes `unit` as one string per code and fails if any code has more
@@ -331,6 +333,14 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
     | `MEDICATION//STOP//<drug>//<route>` | `MEDICATION//END//<drug>//<route>` |
 
     To migrate, rewrite old codes with the regex `^MEDICATION//STOP//` → `MEDICATION//END//`.
+
+- The unit in `LAB//{itemid}//{unit}` (labevents and chartevents) and
+    `MEDICATION//START//{drug}//{route}//{dose unit}` is stripped of surrounding whitespace, and a
+    blank one is `UNK`. Before, the unit was copied as recorded: a padded unit (` mg`) gave a code of
+    its own, and a blank or empty one gave a code ending in whitespace or in `//`, with no `unit`. No
+    output change on the synthetic data; codes change only where a unit was padded or blank. The
+    route is unchanged. To migrate, strip the last segment of an old code and write `UNK` for an
+    empty one: `^(.*//)\s*(\S(?:.*\S)?)?\s*$` → `\1\2`, then an empty last segment → `UNK`.
 
 - A subject with a `patients.dod` but no `admissions.deathtime` no longer gets a second
     `MEDS_DEATH` at the `dischtime` of an admission discharged to `EXPIRED…`; their one death is at

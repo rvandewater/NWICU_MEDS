@@ -162,8 +162,17 @@ data/nw_hosp/emar:
           {$event_txt ?? 'UNK'} (NWICU emar.medication, emar.event_txt)"
 
 data/nw_hosp/labevents:
+  _table:
+    cols:
+      # The unit as the code's last segment: stripped of surrounding whitespace, and `UNK` where it
+      # is missing or blank, as MEDS-Extract compares units when it writes `codes.parquet`
+      # (stripped, blanks dropped), so ` mg/dL` and `mg/dL` give one code. dftly 0.7 has no strip
+      # function, so the extract takes the text from the first to the last non-whitespace character
+      # (`(?s)` lets it span line breaks), which is null when there is none. The same helper gives
+      # the unit segment of chartevents and prescription start codes.
+      _value_unit: '(extract /(?s)\S(?:.*\S)?/ from $valueuom) ?? "UNK"'
   lab:
-    code: 'f"LAB//{$itemid ?? ''UNK''}//{$valueuom ?? ''UNK''}"'
+    code: 'f"LAB//{$itemid ?? ''UNK''}//{$_value_unit}"'
     hadm_id: $hadm_id
     time: $charttime::?"%Y-%m-%d %H:%M:%S"
     numeric_value: $valuenum
@@ -173,8 +182,9 @@ data/nw_hosp/labevents:
       data/nw_hosp/d_labitems:
         itemid: $itemid
         description: $label
-      # The unit of numeric_value, as recorded. It is also the code's last segment, so it is
-      # one value per code; a null valueuom (code `//UNK`) leaves the unit null.
+      # The unit of numeric_value, as recorded (MEDS-Extract strips it). It is also the code's last
+      # segment, so it is one value per code; a null or blank valueuom (code `//UNK`) leaves the
+      # unit null.
       _self:
         unit: $valueuom
 
@@ -225,8 +235,11 @@ data/nw_hosp/prescriptions:
         else f"{$ndc[0:5]}{$ndc[6:10]}0{$ndc[11:12]}" if len_chars($ndc) == 12
       # Labelers 00000 and 99991 are NWICU's in-house placeholders, not FDA products.
       _ndc_real: '$_ndc11 if $_ndc11[0:5] != "00000" and $_ndc11[0:5] != "99991"'
+      # The dose unit as the start code's last segment, stripped; `UNK` if missing or blank (see
+      # labevents).
+      _dose_unit: '(extract /(?s)\S(?:.*\S)?/ from $dose_unit_rx) ?? "UNK"'
   prescription_start:
-    code: f"MEDICATION//START//{$drug}//{$route ?? 'UNK'}//{$dose_unit_rx ?? 'UNK'}"
+    code: f"MEDICATION//START//{$drug}//{$route ?? 'UNK'}//{$_dose_unit}"
     time: $starttime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
     numeric_value: $dose_val_rx
@@ -234,7 +247,7 @@ data/nw_hosp/prescriptions:
     _metadata:
       _self:
         description: >-
-          f"Prescription start: {$drug}; route: {$route ?? 'UNK'}; dose unit: {$dose_unit_rx ?? 'UNK'}
+          f"Prescription start: {$drug}; route: {$route ?? 'UNK'}; dose unit: {$_dose_unit}
           (NWICU prescriptions.drug, route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
         # The unit of numeric_value (dose_val_rx), as recorded; also the code's last segment.
         unit: $dose_unit_rx
@@ -277,8 +290,12 @@ data/nw_icu/icustays:
           icustays.last_careunit)"
 
 data/nw_icu/chartevents:
+  _table:
+    cols:
+      # The unit as the code's last segment, stripped; `UNK` if missing or blank (see labevents).
+      _value_unit: '(extract /(?s)\S(?:.*\S)?/ from $valueuom) ?? "UNK"'
   event:
-    code: 'f"LAB//{$itemid ?? ''UNK''}//{$valueuom ?? ''UNK''}"'
+    code: 'f"LAB//{$itemid ?? ''UNK''}//{$_value_unit}"'
     time: $charttime::?"%Y-%m-%d %H:%M:%S"
     numeric_value: $valuenum
     text_value: $value
