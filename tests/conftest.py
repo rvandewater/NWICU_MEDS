@@ -82,6 +82,7 @@ subject_id,hadm_id,itemid,charttime,value,valuenum,valueuom,priority
 2,201,900001,2160-03-01 10:00:00,2.4,2.4,mg/dL,STAT
 3,301,900003,2170-06-02 06:00:00,Negative,,,
 4,401,900001,2180-09-11 06:00:00,0.9,0.9,mg/dL,ROUTINE
+4,401,900001,2180-09-11 07:00:00,0.05,0.05,mmol/L,ROUTINE
 """
 
 D_LABITEMS = """\
@@ -95,6 +96,7 @@ PRESCRIPTIONS = """\
 subject_id,hadm_id,pharmacy_id,starttime,stoptime,drug,ndc,dose_val_rx,dose_unit_rx,route
 1,101,11,2150-01-02 09:00:00,2150-01-04 09:00:00,Synthetic drug A,12345-6789-01,10,mg,PO
 3,301,31,2170-06-01 16:00:00,2170-06-02 16:00:00,Synthetic drug C,,5,mL,IV
+4,401,41,2180-09-11 09:00:00,2180-09-12 09:00:00,Synthetic drug A,12345-6789-01,500,mcg,PO
 """
 
 ICUSTAYS = """\
