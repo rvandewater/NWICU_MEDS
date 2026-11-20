@@ -25,7 +25,9 @@ import polars as pl
 import pytest
 
 # Patients 1-4. MEDS-Extract needs >= 1 per train/tuning/held_out split. Patient 2 dies in
-# hospital (admissions.deathtime); patient 3 has a dod but no deathtime.
+# hospital (admissions.deathtime); patient 3 has a dod but no deathtime, and a later admission
+# discharged to EXPIRED without a deathtime (302); patient 4 has neither, but a second admission
+# discharged to EXPIRED without a deathtime (402), a death recorded only as the discharge.
 PATIENTS = """\
 subject_id,gender,anchor_age,anchor_year,dod
 1,F,60,2150,
@@ -45,6 +47,10 @@ EXPIRED,Medicaid,ENGLISH,SINGLE,BLACK,,
 Other,,WIDOWED,,2170-06-01 12:00:00,2170-06-01 14:30:00
 4,401,2180-09-10 07:00:00,2180-09-12 15:00:00,,EW EMER.,EMERGENCY ROOM,HOME,Private,ENGLISH,\
 SINGLE,WHITE,2180-09-10 05:00:00,2180-09-10 07:15:00
+3,302,2171-04-28 08:00:00,2171-05-01 09:00:00,,URGENT,TRANSFER FROM HOSPITAL,EXPIRED,Other,,\
+WIDOWED,,,
+4,402,2181-01-01 07:00:00,2181-01-03 12:00:00,,URGENT,TRANSFER FROM HOSPITAL,EXPIRED,Private,\
+ENGLISH,SINGLE,WHITE,,
 """
 
 DIAGNOSES_ICD = """\

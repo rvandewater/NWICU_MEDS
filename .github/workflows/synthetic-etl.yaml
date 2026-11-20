@@ -37,7 +37,10 @@ jobs:
         # environment.
         run: |
           uv pip install "MESSY_synth==0.1.1"
-          uv run --no-sync MESSY-synth ./src/NWICU_MEDS/messy.yaml -o raw_synthetic/ --explain
+          # --null-fraction 0.2 (default 0.05): `death_untimed` needs an EXPIRED discharge with a null
+          # deathtime whose subject also has a null dod, which the default leaves out of the 160 rows,
+          # and MESSY-synth fails an event that yields none.
+          uv run --no-sync MESSY-synth ./src/NWICU_MEDS/messy.yaml -o raw_synthetic/ --explain --null-fraction 0.2
           uv run --locked meds-extract-run spec=NWICU output_dir=./nwicu_meds_synth input_dir=raw_synthetic do_download=False
           # The stage ran and recorded the enrichment (or, without the packs, a soft failure).
           jq -e '.sumeds_enrichment.rules == "NWICU"' nwicu_meds_synth/metadata/dataset.json
