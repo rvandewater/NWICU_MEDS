@@ -136,7 +136,7 @@ data/nw_hosp/diagnoses_icd:
         icd_code: $icd_code
         description: $long_title
         parent_codes: >-
-          f"ICD{$icd_version}CM/{($icd_code[0:4] + '.' + $icd_code[4:]
+          f"ICD{$icd_version}CM//{($icd_code[0:4] + '.' + $icd_code[4:]
           if len_chars($icd_code) > 4 else $icd_code)
           if ($icd_version::str == '9' and /^E/ in $icd_code)
           else ($icd_code[0:3] + '.' + $icd_code[3:]
@@ -235,7 +235,7 @@ data/nw_hosp/prescriptions:
           (NWICU prescriptions.drug, route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
         # The unit of numeric_value (dose_val_rx), as recorded; also the code's last segment.
         unit: $dose_unit_rx
-        parent_codes: 'f"NDC/{$_ndc_real}" if $_ndc_real == $_ndc_real'
+        parent_codes: 'f"NDC//{$_ndc_real}" if $_ndc_real == $_ndc_real'
   prescription_stop:
     code: f"MEDICATION//STOP//{$drug}//{$route ?? 'UNK'}"
     time: $stoptime::?"%Y-%m-%d %H:%M:%S"
@@ -246,7 +246,7 @@ data/nw_hosp/prescriptions:
         description: >-
           f"Prescription stop: {$drug}; route: {$route ?? 'UNK'} (NWICU prescriptions.drug, route)"
         # The same NDC parents as the matching start code.
-        parent_codes: 'f"NDC/{$_ndc_real}" if $_ndc_real == $_ndc_real'
+        parent_codes: 'f"NDC//{$_ndc_real}" if $_ndc_real == $_ndc_real'
 
 data/nw_icu/icustays:
   icu_admission:

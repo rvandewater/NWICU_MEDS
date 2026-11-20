@@ -14,7 +14,7 @@ The rows cover every event of the config and the code families the suMEDS rules 
 - ``LAB//{itemid}//{unit}`` codes from ``labevents`` and from ``chartevents``, some of whose item
   ids are in the synthetic ``nwicu/loinc_parents`` crosswalk and some not;
 - ``GENDER//F`` and ``GENDER//M``;
-- prescriptions with a 3-segment NDC, so their codes carry an ``NDC/...`` parent from the ETL.
+- prescriptions with a 3-segment NDC, so their codes carry an ``NDC//...`` parent from the ETL.
 """
 
 import os

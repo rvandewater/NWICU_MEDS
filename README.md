@@ -88,7 +88,7 @@ what `meds-extract-download` writes, not at `data/` itself.
 ### Code metadata: descriptions, parent codes and units
 
 Every code in `metadata/codes.parquet` gets a `description`, and codes for which NWICU itself
-records a standard-vocabulary code get `parent_codes` (`ICD9CM/…`, `ICD10CM/…`, `NDC/…`, named
+records a standard-vocabulary code get `parent_codes` (`ICD9CM//…`, `ICD10CM//…`, `NDC//…`, named
 after the OMOP `vocabulary_id`) so vocabulary tooling such as OHDSI Athena can resolve them.
 Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 
@@ -232,9 +232,9 @@ The rules add:
     specimen and method; the table records both ends of every bridge.
 - **ICD diagnoses** (`nwicu-icd10cm-diagnoses`, `nwicu-icd9cm-diagnoses`, ontology rules): the
     dotted ICD-10-CM / ICD-9-CM code is validated against the pack and gives `vocabulary_id`,
-    `concept_code` and every ancestor in the pack. The ETL's own parent stays first, since suMEDS
-    counts `ICD10CM/I50.23` and `ICD10CM//I50.23` as the same entry, and the ancestors follow it
-    (`DIAGNOSIS//ICD//10//I5023` gets `ICD10CM/I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
+    `concept_code` and every ancestor in the pack. The ETL's own parent stays first and suMEDS does
+    not add it again, and the ancestors follow it (`DIAGNOSIS//ICD//10//I5023` gets
+    `ICD10CM//I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
 - **Gender** (`nwicu-gender`, an ontology rule): `GENDER//F` and `GENDER//M` get the OMOP Gender
     codes `Gender//F` and `Gender//M` (a tag: Gender has no public pack; with `--athena-csv`
     suMEDS validates them against Athena).
@@ -250,7 +250,7 @@ in their own rows.
 The ETL alone no longer emits the LOINC parents of lab and chart codes (earlier builds wrote
 `LOINC/<code>` for the same 50 itemids), and it never emitted ICD ancestors, Gender codes or
 parents among NWICU codes; suMEDS supplies them. suMEDS never removes or rewrites the ETL's own
-parents (`ICD10CM/…`, `NDC/…`) or descriptions: it only fills empty fields and appends parents.
+parents (`ICD10CM//…`, `NDC//…`) or descriptions: it only fills empty fields and appends parents.
 
 ## Summary statistics
 
@@ -281,6 +281,16 @@ commit reproduces the baseline exactly, so any finding is a change in the output
 credentialed release, so the [Summary stats workflow](.github/workflows/summary-stats.yaml) only warns
 when a pull request changes `src/` (the config or the suMEDS rules) without regenerating the baseline. A
 MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it with `--compare`.
+
+## Breaking changes
+
+### Unreleased (after 1.1.0)
+
+- **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
+    (`ICD9CM`, `ICD10CM`, `NDC`) used one slash, `NDC/12345678901`; they now use two,
+    `NDC//12345678901`, the spelling suMEDS already writes for the parents it adds. Codes and events
+    are unchanged. To migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS
+    and alignEHR already read both spellings as the same parent.
 
 ## Citation
 
