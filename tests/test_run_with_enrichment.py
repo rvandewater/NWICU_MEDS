@@ -256,7 +256,11 @@ def test_lab_and_chart_items_get_loinc_from_the_crosswalk(enriched_rows: dict):
 
     # A crosswalk LOINC code that is not in the pack, and an item without a crosswalk row.
     for code in ("LAB//900002//mEq/L", "LAB//900003//UNK"):
-        assert not [p for p in enriched_rows[code]["parent_codes"] or [] if p.startswith("LOINC")], code
+        assert not [
+            p
+            for p in enriched_rows[code]["parent_codes"] or []
+            if p.startswith("LOINC")
+        ], code
         assert enriched_rows[code]["vocabulary_id"] is None, code
 
 
