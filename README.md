@@ -311,6 +311,7 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
     `NDC//12345678901`, the spelling suMEDS already writes for the parents it adds. Codes and events
     are unchanged. To migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS
     and alignEHR already read both spellings as the same parent.
+
 - **ICD codes name the vocabulary and its edition apart, `ICD//<edition>//<code>`.** Diagnoses
     `DIAGNOSIS//ICD//9//<code>` and `DIAGNOSIS//ICD//10//<code>` are now `DIAGNOSIS//ICD//9CM//<code>`
     and `DIAGNOSIS//ICD//10CM//<code>`: NWICU's `icd_version` 9 and 10 are the US billing editions
