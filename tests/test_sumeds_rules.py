@@ -7,19 +7,20 @@ example codes are rendered from the ETL's own ``messy.yaml`` templates with synt
 release of ``conftest.py``.
 """
 
-import re
 from importlib.resources import files
 from pathlib import Path
 
 import polars as pl
 import pytest
 import yaml
+from dftly import Parser
 from sumeds import OntologyRules, load_rules, registered_rules
 
 from NWICU_MEDS import MESSY_CFG, PIPELINE_NAME, __package_name__
 
 RULES_FP = Path(__file__).parents[1] / "src" / "NWICU_MEDS" / "sumeds_rules.yaml"
 ICD_RULES = {"10": "nwicu-icd10cm-diagnoses", "9": "nwicu-icd9cm-diagnoses"}
+EDITIONS = {"10": "10CM", "9": "9CM"}
 
 
 @pytest.fixture(scope="module")
@@ -40,13 +41,14 @@ def _rule(rules: OntologyRules, rule_id: str):
 
 
 def _render(template: str, **values: str) -> str:
-    """Render an ``f"..."`` code template of ``messy.yaml`` with synthetic column values."""
-    body = re.fullmatch(r'\s*f"(.*)"\s*', template, flags=re.S).group(1)
-    return re.sub(
-        r"\{\s*\$(\w+)(?:\s*\?\?\s*'[^']*')?\s*\}",
-        lambda m: values.get(m.group(1), "UNK"),
-        body,
+    """Evaluate a ``messy.yaml`` code template with dftly, as MEDS-Extract does, on one row of
+    synthetic column values; a column not given is null."""
+    node = Parser()(template)
+    columns = sorted(node.referenced_columns)
+    row = pl.DataFrame(
+        {c: [values.get(c)] for c in columns}, schema={c: pl.String for c in columns}
     )
+    return row.select(node.polars_expr).item()
 
 
 def test_rules_file_is_packaged():
@@ -88,7 +90,7 @@ def test_icd_parents_come_from_the_icd_rules(rules: OntologyRules):
 def test_icd_rules_restore_the_dot(raw_cfg, rules, version, icd_code, expected):
     template = raw_cfg["data/nw_hosp/diagnoses_icd"]["diagnosis"]["code"]
     code = _render(template, icd_version=version, icd_code=icd_code)
-    assert code == f"DIAGNOSIS//ICD//{version}//{icd_code}"
+    assert code == f"DIAGNOSIS//ICD//{EDITIONS[version]}//{icd_code}"
     resolved = {rule.id: rule.resolve(code) for rule in rules.ontology}
     assert {k: v for k, v in resolved.items() if v is not None} == {
         ICD_RULES[version]: expected
@@ -118,10 +120,11 @@ def test_gender_rule(raw_cfg, rules):
 def test_lab_loinc_crosswalk_key_is_the_itemid(raw_cfg, rules, table, event, unit):
     rule = _rule(rules, "nwicu-lab-loinc")
     template = raw_cfg[table][event]["code"]
-    code = _render(template, itemid="123456", valueuom=unit)
+    code = _render(template, itemid="123456", _value_unit=unit)
     assert code == f"LAB//123456//{unit}"
     assert rule.key(code) == "123456"
-    assert rule.key(_render(template)) is None  # LAB//UNK//UNK
+    # `_value_unit` is the derived column, which is `UNK` for a missing unit.
+    assert rule.key(_render(template, _value_unit="UNK")) is None  # LAB//UNK//UNK
 
 
 def test_lab_loinc_crosswalk_skips_other_families(raw_cfg, rules):
@@ -147,12 +150,12 @@ def test_rules_match_the_codes_the_etl_writes(
         if hits:
             matched[code] = hits[0]
     assert matched == {
-        "DIAGNOSIS//ICD//10//E119": "nwicu-icd10cm-diagnoses",
-        "DIAGNOSIS//ICD//10//I502": "nwicu-icd10cm-diagnoses",
-        "DIAGNOSIS//ICD//10//I5023": "nwicu-icd10cm-diagnoses",
-        "DIAGNOSIS//ICD//10//R4689": "nwicu-icd10cm-diagnoses",
-        "DIAGNOSIS//ICD//9//4019": "nwicu-icd9cm-diagnoses",
-        "DIAGNOSIS//ICD//9//E8889": "nwicu-icd9cm-diagnoses",
+        "DIAGNOSIS//ICD//10CM//E119": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//10CM//I502": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//10CM//I5023": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//10CM//R4689": "nwicu-icd10cm-diagnoses",
+        "DIAGNOSIS//ICD//9CM//4019": "nwicu-icd9cm-diagnoses",
+        "DIAGNOSIS//ICD//9CM//E8889": "nwicu-icd9cm-diagnoses",
         "GENDER//F": "nwicu-gender",
         "GENDER//M": "nwicu-gender",
         "LAB//800001//bpm": "nwicu-lab-loinc",

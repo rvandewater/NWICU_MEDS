@@ -144,9 +144,14 @@ def test_numeric_codes_carry_their_recorded_unit(codes):
     for code, unit in expected.items():
         assert (units[code], recorded[code]) == unit, code
     assert units["LAB//900003//UNK"] is None
+    # The fixture pads some units with whitespace and leaves one blank: each code's unit is
+    # stripped, a blank one is `UNK`, and no code ends in whitespace or in an empty segment.
+    assert [
+        code for code in units if code != code.rstrip() or code.endswith("//")
+    ] == []
     # Codes without a numeric value carry no unit.
     assert units["GENDER//F"] is None
-    assert units["MEDICATION//STOP//Synthetic drug A//PO"] is None
+    assert units["MEDICATION//END//Synthetic drug A//PO"] is None
     # Labels still come from the item dictionaries next to the `_self` unit block.
     descriptions = dict(codes.select("code", "description").iter_rows())
     assert descriptions["LAB//900001//mg/dL"] == "Synthetic lab A"
@@ -174,9 +179,13 @@ def test_unit_siblings_get_their_stem_as_parent_and_row(codes):
         "Prescription start: Synthetic drug A; route: PO; dose unit: (NWICU prescriptions.drug, "
         "route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
     )
-    # A unit-suffixed code without a sibling gets neither.
-    assert "LAB//900002" not in rows
-    assert not rows["LAB//900002//mEq/L"]["parent_codes"]
+    # A unit-suffixed code without a sibling gets its stem too (`link_single_units`), and a
+    # prescription start without a dose unit as well (`unknown_unit_prefixes`); a lab code without a
+    # unit does not, as `UNK` there is no unit to strip.
+    assert rows["LAB//900002//mEq/L"]["parent_codes"] == ["LAB//900002"]
+    assert rows["LAB//900002"]["unit"] is None
+    assert not rows["LAB//900003//UNK"]["parent_codes"]
+    assert "LAB//900003" not in rows
 
 
 def test_constant_codes_are_plain_literals(raw_cfg: dict):

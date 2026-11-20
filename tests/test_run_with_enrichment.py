@@ -26,7 +26,7 @@ from conftest import etl_args, run_command
 from meds import CodeMetadataSchema, DataSchema, DatasetMetadataSchema
 
 # vocabulary -> release -> code -> parent (None for a top-level code). ICD-10-CM R46.89 is
-# deliberately missing, so DIAGNOSIS//ICD//10//R4689 keeps only what the ETL gave it.
+# deliberately missing, so DIAGNOSIS//ICD//10CM//R4689 keeps only what the ETL gave it.
 PACKS = {
     "ICD10CM": (
         "fy2016-fy2027",
@@ -246,22 +246,26 @@ def test_lab_and_chart_items_get_loinc_from_the_crosswalk(enriched_rows: dict):
         row = enriched_rows[code]
         assert row["vocabulary_id"] == "LOINC", code
         assert row["concept_code"] == loinc, code
-        # 900001 also has a mmol/L code, so its in-dataset unit-sibling parent comes first (the
-        # post-stage that adds it runs before suMEDS); suMEDS keeps it and names only LOINC.
-        sibling = ["LAB//900001"] if code.startswith("LAB//900001//") else []
-        assert row["parent_codes"] == [*sibling, f"LOINC//{loinc}"], code
-        assert _names(row) == {f"LOINC//{loinc}": title("LOINC", loinc)}, code
+        # Its in-dataset unit-free stem comes first (the post-stage that adds it runs before
+        # suMEDS; with `link_single_units` also for 800001, which has one unit); suMEDS keeps it.
+        stem = code.rsplit("//", 1)[0]
+        assert row["parent_codes"] == [stem, f"LOINC//{loinc}"], code
+        assert _names(row)[f"LOINC//{loinc}"] == title("LOINC", loinc), code
     # The dictionary label from the ETL is kept.
     assert enriched_rows["LAB//900001//mg/dL"]["description"] == "Synthetic lab A"
 
     # A crosswalk LOINC code that is not in the pack, and an item without a crosswalk row.
     for code in ("LAB//900002//mEq/L", "LAB//900003//UNK"):
-        assert not enriched_rows[code]["parent_codes"], code
+        assert not [
+            p
+            for p in enriched_rows[code]["parent_codes"] or []
+            if p.startswith("LOINC")
+        ], code
         assert enriched_rows[code]["vocabulary_id"] is None, code
 
 
 def test_icd_diagnoses_get_pack_ancestors_and_dataset_parents(enriched_rows: dict):
-    row = enriched_rows["DIAGNOSIS//ICD//10//I5023"]
+    row = enriched_rows["DIAGNOSIS//ICD//10CM//I5023"]
     assert (
         row["description"] == "Synthetic diagnosis title I5023"
     )  # from d_icd_diagnoses
@@ -272,7 +276,7 @@ def test_icd_diagnoses_get_pack_ancestors_and_dataset_parents(enriched_rows: dic
         "ICD10CM//I50.23",
         "ICD10CM//I50.2",
         "ICD10CM//I50",
-        "DIAGNOSIS//ICD//10//I502",
+        "DIAGNOSIS//ICD//10CM//I502",
     ]
     assert _names(row) == {
         "ICD10CM//I50.23": title("ICD10CM", "I50.23"),
@@ -280,12 +284,12 @@ def test_icd_diagnoses_get_pack_ancestors_and_dataset_parents(enriched_rows: dic
         "ICD10CM//I50": title("ICD10CM", "I50"),
     }
 
-    row = enriched_rows["DIAGNOSIS//ICD//9//E8889"]
+    row = enriched_rows["DIAGNOSIS//ICD//9CM//E8889"]
     assert (row["vocabulary_id"], row["concept_code"]) == ("ICD9CM", "E888.9")
     assert row["parent_codes"] == ["ICD9CM//E888.9", "ICD9CM//E888"]
 
     # A code that is not in the pack keeps only the ETL's parent.
-    row = enriched_rows["DIAGNOSIS//ICD//10//R4689"]
+    row = enriched_rows["DIAGNOSIS//ICD//10CM//R4689"]
     assert row["parent_codes"] == ["ICD10CM//R46.89"]
     assert row["vocabulary_id"] is None
 

@@ -50,6 +50,15 @@ PhysioNet page (`description_uri`), and lists `hadm_id`, `icustay_id`, `emar_id`
 `pharmacy_id`, the keys back to the raw tables, under `raw_source_id_columns`; MEDS-Extract lists
 every other extension column under `other_extension_columns`.
 
+Intermediate stage outputs are deleted after a successful run, by default: the spec sets
+MEDS-Extract's `etl.cleanup_intermediates: true`, so a finished `$OUTPUT_DIR` holds only `data/`,
+`metadata/`, `.logs/` and `.meds_extract_run/`. A failed run keeps them, so the same command resumes
+where it stopped, and the same command on a finished output still does nothing. To keep them (to look
+at a stage's output; `$OUTPUT_DIR/.logs/pipeline.log` keeps the stage logs either way), add
+`"overrides=['cleanup_intermediates=false']"`. Cleanup never deletes raw data: a download into the
+default `$OUTPUT_DIR/.meds_extract_run/raw_input` stays, and `download_dest_dir=` elsewhere lets other
+output directories reuse it.
+
 ## Configuration
 
 **This package contains no ETL code.** The entire pipeline is one file,
@@ -114,9 +123,9 @@ Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 
 | Code family                                                                                                                                                       | Route                                                                                    | Source                                                                                                                                                                                                                                                                                                                                              |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DIAGNOSIS//ICD//…`                                                                                                                                               | NWICU's `d_icd_diagnoses`, joined on `icd_version` and `icd_code`                        | `long_title`; ICD-9-CM / ICD-10-CM parent with the dot restored                                                                                                                                                                                                                                                                                     |
+| `DIAGNOSIS//ICD//{9CM,10CM}//…`                                                                                                                                   | NWICU's `d_icd_diagnoses`, joined on `icd_version` and `icd_code`                        | `long_title`; ICD-9-CM / ICD-10-CM parent with the dot restored                                                                                                                                                                                                                                                                                     |
 | `LAB//…` (from `labevents` and `chartevents`), `PROCEDURE//…`                                                                                                     | NWICU's `d_labitems` / `d_items`, joined on `itemid` alone, so a label covers every unit | `label`; no vocabulary parent (LOINC links come from suMEDS, below)                                                                                                                                                                                                                                                                                 |
-| `MEDICATION//START//…`, `MEDICATION//STOP//…`                                                                                                                     | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and stop codes)                                                                                                                                                                                                              |
+| `MEDICATION//START//…`, `MEDICATION//END//…`                                                                                                                      | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and end codes)                                                                                                                                                                                                               |
 | `MEDICATION//…` (eMAR), `HOSPITAL_ADMISSION`, `HOSPITAL_DISCHARGE`, `INSURANCE`, `LANGUAGE`, `MARITAL_STATUS`, `RACE`, `GENDER`, `ICU_ADMISSION`, `ICU_DISCHARGE` | `_self` template over the code's components                                              | the column each component comes from, with its meaning from the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/modules/) (source: [MIT-LCP/mimic-website](https://github.com/MIT-LCP/mimic-website), MIT, 8182227), whose structure NWICU retains ([NWICU 0.1.0 project page](https://physionet.org/content/nwicu-northwestern-icu/0.1.0/)) |
 | `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text on the literal code (below)                                                 | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
 
@@ -128,20 +137,26 @@ is. The sources are `labevents.valueuom` and `chartevents.valueuom` for `LAB//�
 `_self` block next to the dictionary block) and `prescriptions.dose_unit_rx` for
 `MEDICATION//START//…`. In NWICU the unit as recorded is already the code's last segment, so each code
 has one unit and the codes are unchanged (`LAB//{itemid}//mEq/L` keeps its name); a code whose unit segment is `UNK` (a null unit) has a null
-`unit`. `d_items.unitname` states a unit for the 13 chart codes without one, but none of their rows
+`unit`. The unit in a code is stripped of surrounding whitespace; missing or blank is `UNK`.
+MEDS-Extract compares units the same way when it writes `unit` (stripped, blanks dropped), so
+` mg/dL` and `mg/dL` give one code. `d_items.unitname` states a unit for the 13 chart codes without one, but none of their rows
 has a numeric value, so it is not used; `d_labitems` has no unit column.
 
 MEDS-Extract (since 0.9.0) writes `unit` as one string per code and fails if any code has more
 than one unit. The first post-stage, suMEDS's
 [`sumeds_link_unit_siblings`](https://github.com/rvandewater/suMEDS/blob/main/docs/unit_siblings.md)
-(default options; it replaced this package's own `nwicu_unit_metadata` in suMEDS 0.6.6), gives codes
+(it replaced this package's own `nwicu_unit_metadata` in suMEDS 0.6.6), gives codes
 that differ only in their unit (`LAB//{itemid}//mg/dL` and `…//mmol/L`) the code without the unit
 (`LAB//{itemid}`) as an in-dataset parent in `parent_codes`, and adds a row for that code: no unit,
 the description its siblings share (for prescription starts, whose descriptions differ only by the
 dose unit, that description without it) and the vocabulary parents they all have. A code of the same
 item whose unit was not recorded (`LAB//{itemid}//UNK`) joins the siblings, but two `UNK`-style codes
 alone are never a group. On NWICU 0.1.0, before `UNK` codes were linked, that was 477 groups (142 lab
-items, 335 drug/route pairs; 1,135 codes) and 477 added rows.
+items, 335 drug/route pairs; 1,135 codes) and 477 added rows. With `link_single_units: true` and
+`unknown_unit_prefixes: [MEDICATION//START//]`, a code ending in its unit gets its stem also when its
+item has a single unit, and so does a prescription start without a recorded dose unit
+(`MEDICATION//START//{drug}//{route}//UNK`), so every start pairs with its end
+(`…//{drug}//{route}`) by stem.
 
 The item dictionaries replace a Python rebuild that existed because the MIMIC-IV crosswalks are
 keyed on MIMIC itemids that never match NWICU's, a mismatch that now surfaces as a WARNING instead
@@ -175,7 +190,9 @@ record, and parents among NWICU's own codes, are added afterwards by
 ```yaml
 etl:
   post_stages:
-    - sumeds_link_unit_siblings
+    - sumeds_link_unit_siblings:
+        link_single_units: true
+        unknown_unit_prefixes: [MEDICATION//START//]
     - sumeds_normalize_units
     - sumeds_enrich: {rules: NWICU}
 ```
@@ -251,14 +268,14 @@ The rules add:
 - **ICD diagnoses** (`nwicu-icd10cm-diagnoses`, `nwicu-icd9cm-diagnoses`, ontology rules): the
     dotted ICD-10-CM / ICD-9-CM code is validated against the pack and gives `vocabulary_id`,
     `concept_code` and every ancestor in the pack. The ETL's own parent stays first and suMEDS does
-    not add it again, and the ancestors follow it (`DIAGNOSIS//ICD//10//I5023` gets
+    not add it again, and the ancestors follow it (`DIAGNOSIS//ICD//10CM//I5023` gets
     `ICD10CM//I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
 - **Gender** (`nwicu-gender`, an ontology rule): `GENDER//F` and `GENDER//M` get the OMOP Gender
     codes `Gender//F` and `Gender//M` (a tag: Gender has no public pack; with `--athena-csv`
     suMEDS validates them against Athena).
 - **Parents among NWICU codes** (`nwicu-icd-parents-in-dataset`, a hierarchy rule): a diagnosis
     code of the table becomes the parent of another when its ICD code is the nearest ancestor
-    present (`DIAGNOSIS//ICD//10//I5023` gets `DIAGNOSIS//ICD//10//I502` when both occur).
+    present (`DIAGNOSIS//ICD//10CM//I5023` gets `DIAGNOSIS//ICD//10CM//I502` when both occur).
 
 Every parent that a pack (or Athena) knows is named in `parent_names`, a map from the parent
 code to its name (`map<string, string>` in parquet; suMEDS 0.6 replaced the earlier list aligned
@@ -309,6 +326,52 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
     `NDC//12345678901`, the spelling suMEDS already writes for the parents it adds. Codes and events
     are unchanged. To migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS
     and alignEHR already read both spellings as the same parent.
+
+- **ICD codes name the vocabulary and its edition apart, `ICD//<edition>//<code>`.** Diagnoses
+    `DIAGNOSIS//ICD//9//<code>` and `DIAGNOSIS//ICD//10//<code>` are now `DIAGNOSIS//ICD//9CM//<code>`
+    and `DIAGNOSIS//ICD//10CM//<code>`: NWICU's `icd_version` 9 and 10 are the US billing editions
+    ICD-9-CM and ICD-10-CM, as the ETL's `ICD9CM`/`ICD10CM` parents already said. Every MEDS ETL of
+    this family now uses this layout (`ICD//10PCS`, `ICD//10GM`, `ICD//10CN`, ...). The code after
+    the edition is unchanged (undotted, as NWICU records it), and so are its parents. A missing
+    version is still `UNK`. To migrate, rename codes with the regex
+    `^DIAGNOSIS//ICD//(9|10)//` → `DIAGNOSIS//ICD//\1CM//`.
+
+- **Prescription end codes use `END`, not `STOP`** ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)):
+    `MEDICATION//STOP//<drug>//<route>` is now `MEDICATION//END//<drug>//<route>`, the spelling all MEDS ETLs
+    move to for the two ends of an interval, `<FAMILY>//START//…` and `<FAMILY>//END//…`. The start code, the events and the code
+    metadata are otherwise unchanged. The end code keeps the route, which says which order it is; only the start
+    ends in the dose unit, the unit of its value. To pair a start with its end, drop the start's last part and swap
+    `START` for `END`.
+
+    | Old                                 | New                                |
+    | ----------------------------------- | ---------------------------------- |
+    | `MEDICATION//STOP//<drug>//<route>` | `MEDICATION//END//<drug>//<route>` |
+
+    To migrate, rewrite old codes with the regex `^MEDICATION//STOP//` → `MEDICATION//END//`.
+
+- The unit in `LAB//{itemid}//{unit}` (labevents and chartevents) and
+    `MEDICATION//START//{drug}//{route}//{dose unit}` is stripped of surrounding whitespace, and a
+    blank one is `UNK`. Before, the unit was copied as recorded: a padded unit (` mg`) gave a code of
+    its own, and a blank or empty one gave a code ending in whitespace or in `//`, with no `unit`. No
+    output change on the synthetic data; codes change only where a unit was padded or blank. The
+    route is unchanged. To migrate, strip the last segment of an old code and write `UNK` for an
+    empty one: `^(.*//)\s*(\S(?:.*\S)?)?\s*$` → `\1\2`, then an empty last segment → `UNK`.
+
+- **Intermediate stage outputs are no longer kept.** Up to 1.1.0, a run left each stage's output in
+    `<output_dir>/<stage>/` (`convert_to_parquet/`, `convert_to_MEDS_events/`, `sumeds_enrich/`, …). The spec now sets MEDS-Extract's
+    `etl.cleanup_intermediates: true`, so a successful run deletes those directories and keeps only
+    `data/`, `metadata/`, `.logs/` and `.meds_extract_run/`. The MEDS data and metadata are
+    unchanged. To migrate, add `"overrides=['cleanup_intermediates=false']"` to `meds-extract-run`
+    wherever you read a stage directory after the run.
+
+- **`codes.parquet` gains unit-free stem rows and stem parents for single-unit codes**
+    ([#20](https://github.com/rvandewater/NWICU_MEDS/pull/20)). suMEDS's `sumeds_link_unit_siblings` now runs with `link_single_units: true`:
+    every code that ends in its unit gets the code without the unit (its stem) as its last
+    `parent_codes` entry, and the stem gets a row of its own (no unit, no events), also when the
+    item has a single unit (`LAB//{itemid}//{unit}` gets `LAB//{itemid}`, `MEDICATION//START//{drug}//{route}//{unit}` gets `MEDICATION//START//{drug}//{route}`). Before, only items recorded in two or more units did. A prescription start without a recorded dose unit (`MEDICATION//START//{drug}//{route}//UNK`) gets its stem too (`unknown_unit_prefixes`).
+    Events are unchanged. On a synthetic (MESSY-synth) build, 24 `MEDICATION//START` codes gain a stem parent (8 of them `…//UNK`) and 24 stem rows are added. To migrate, nothing is needed unless a tool expects every
+    `codes.parquet` row to have events: drop the stem rows (no `code_template`, no `unit`), or
+    ignore a parent that is the code without its last `//` component.
 
 - A subject with a `patients.dod` but no `admissions.deathtime` no longer gets a second
     `MEDS_DEATH` at the `dischtime` of an admission discharged to `EXPIRED…`; their one death is at
