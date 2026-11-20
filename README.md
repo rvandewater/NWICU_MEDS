@@ -50,6 +50,15 @@ PhysioNet page (`description_uri`), and lists `hadm_id`, `icustay_id`, `emar_id`
 `pharmacy_id`, the keys back to the raw tables, under `raw_source_id_columns`; MEDS-Extract lists
 every other extension column under `other_extension_columns`.
 
+Intermediate stage outputs are deleted after a successful run, by default: the spec sets
+MEDS-Extract's `etl.cleanup_intermediates: true`, so a finished `$OUTPUT_DIR` holds only `data/`,
+`metadata/`, `.logs/` and `.meds_extract_run/`. A failed run keeps them, so the same command resumes
+where it stopped, and the same command on a finished output still does nothing. To keep them (to look
+at a stage's output; `$OUTPUT_DIR/.logs/pipeline.log` keeps the stage logs either way), add
+`"overrides=['cleanup_intermediates=false']"`. Cleanup never deletes raw data: a download into the
+default `$OUTPUT_DIR/.meds_extract_run/raw_input` stays, and `download_dest_dir=` elsewhere lets other
+output directories reuse it.
+
 ## Configuration
 
 **This package contains no ETL code.** The entire pipeline is one file,
@@ -341,6 +350,13 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
     output change on the synthetic data; codes change only where a unit was padded or blank. The
     route is unchanged. To migrate, strip the last segment of an old code and write `UNK` for an
     empty one: `^(.*//)\s*(\S(?:.*\S)?)?\s*$` → `\1\2`, then an empty last segment → `UNK`.
+
+- **Intermediate stage outputs are no longer kept.** Up to 1.1.0, a run left each stage's output in
+    `<output_dir>/<stage>/` (`convert_to_parquet/`, `convert_to_MEDS_events/`, `sumeds_enrich/`, …). The spec now sets MEDS-Extract's
+    `etl.cleanup_intermediates: true`, so a successful run deletes those directories and keeps only
+    `data/`, `metadata/`, `.logs/` and `.meds_extract_run/`. The MEDS data and metadata are
+    unchanged. To migrate, add `"overrides=['cleanup_intermediates=false']"` to `meds-extract-run`
+    wherever you read a stage directory after the run.
 
 - A subject with a `patients.dod` but no `admissions.deathtime` no longer gets a second
     `MEDS_DEATH` at the `dischtime` of an admission discharged to `EXPIRED…`; their one death is at
