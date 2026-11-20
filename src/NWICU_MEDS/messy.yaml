@@ -37,27 +37,22 @@ _defaults:
   subject_id: $subject_id
 
 data/nw_hosp/admissions:
+  # ED_REGISTRATION, ED_OUT, MEDS_BIRTH and MEDS_DEATH are plain literals: MEDS-Extract (>= 0.8.1,
+  # mmcdermott/MEDS_extract#166) attaches `_self` metadata to literal codes, and a row whose time
+  # is null yields no event.
   _table:
     # The subject's date of death, for the `death_untimed` guard below.
     joins:
       data/nw_hosp/patients: { key: subject_id, cols: [dod] }
-    cols:
-      # Constant code columns. MEDS-Extract attaches metadata only through a code's
-      # components, so a bare literal `code: ED_REGISTRATION` can never be described; reading
-      # the same string from a constant column gives the code one component and lets a
-      # `_self` block describe it. The emitted codes are unchanged. See "Code metadata" in
-      # the README.
-      _code_ed_registration: '"ED_REGISTRATION"'
-      _code_ed_out: '"ED_OUT"'
   ed_registration:
-    code: $_code_ed_registration
+    code: ED_REGISTRATION
     time: $edregtime::?"%Y-%m-%d %H:%M:%S"
     _metadata:
       _self:
         description: >-
           "Emergency department registration (time: NWICU admissions.edregtime)"
   ed_out:
-    code: $_code_ed_out
+    code: ED_OUT
     time: $edouttime::?"%Y-%m-%d %H:%M:%S"
     _metadata:
       _self:
@@ -185,9 +180,6 @@ data/nw_hosp/patients:
     cols:
       dod_final: $deathtime ?? $dod
       year_of_birth: ($anchor_year - $anchor_age)::str
-      # Constant code columns, so the literal MEDS codes can be described (see admissions).
-      _code_birth: '"MEDS_BIRTH"'
-      _code_death: '"MEDS_DEATH"'
   gender:
     code: 'f"GENDER//{$gender ?? ''UNK''}"'
     time: null
@@ -196,7 +188,7 @@ data/nw_hosp/patients:
         description: >-
           f"Patient sex: {$gender ?? 'UNK'} (NWICU patients.gender)"
   dob:
-    code: $_code_birth
+    code: MEDS_BIRTH
     time: $year_of_birth::?"%Y"
     _metadata:
       _self:
@@ -206,7 +198,7 @@ data/nw_hosp/patients:
   # MEDS_DEATH is also emitted by `death_untimed` in admissions; that event carries no
   # `_metadata`, so this description is the code's only one (one code, one code template).
   death:
-    code: $_code_death
+    code: MEDS_DEATH
     time: coalesce($dod_final::?"%Y-%m-%d %H:%M:%S", $dod_final::?"%Y-%m-%d")
     _metadata:
       _self:

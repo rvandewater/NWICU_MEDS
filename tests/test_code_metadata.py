@@ -37,11 +37,9 @@ def _events(raw_cfg: dict):
                 yield table, name, event
 
 
-def _family(table_body: dict, code: str) -> str:
+def _family(code: str) -> str:
     """The constant part of a code expression: the f-string prefix, or the literal it emits."""
     code = code.strip()
-    if m := re.fullmatch(r"\$(\w+)", code):  # a constant `_table.cols` column
-        code = table_body["_table"]["cols"][m.group(1)]
     if m := re.match(r"""f?["']([A-Z_]+)""", code):
         return m.group(1)
     return code
@@ -50,8 +48,8 @@ def _family(table_body: dict, code: str) -> str:
 def test_every_code_family_is_described(raw_cfg: dict):
     """Each family the config emits is described by at least one event's metadata block."""
     families, described = set(), set()
-    for table, _name, event in _events(raw_cfg):
-        family = _family(raw_cfg[table], str(event["code"]))
+    for _table, _name, event in _events(raw_cfg):
+        family = _family(str(event["code"]))
         families.add(family)
         if any("description" in block for block in event.get("_metadata", {}).values()):
             described.add(family)
@@ -179,3 +177,23 @@ def test_unit_siblings_get_their_stem_as_parent_and_row(codes):
     # A unit-suffixed code without a sibling gets neither.
     assert "LAB//900002" not in rows
     assert not rows["LAB//900002//mEq/L"]["parent_codes"]
+
+
+def test_constant_codes_are_plain_literals(raw_cfg: dict):
+    """The four constant codes are plain literals, not read from constant `_table.cols` columns:
+    MEDS-Extract >= 0.8.1 attaches `_self` metadata to literal codes (mmcdermott/MEDS_extract#166)."""
+    literals = {}
+    for table, name, event in _events(raw_cfg):
+        code = str(event["code"]).strip()
+        assert not code.startswith("$"), (
+            f"{table}/{name}: code read from a column: {code}"
+        )
+        if m := re.fullmatch(r"[A-Z_]+", code):
+            literals[m.group(0)] = event["_metadata"]["_self"]["description"]
+    assert set(literals) == {"ED_REGISTRATION", "ED_OUT", "MEDS_BIRTH", "MEDS_DEATH"}
+    assert all(literals.values())
+    for table, body in raw_cfg.items():
+        cols = body.get("_table", {}).get("cols", {}) if isinstance(body, dict) else {}
+        assert not any(c.startswith("_code") for c in cols), (
+            f"{table}: constant code column"
+        )
