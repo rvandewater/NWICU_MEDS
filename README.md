@@ -287,8 +287,8 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
 ### Unreleased (after 1.1.0)
 
 - **Prescription end codes use `END`, not `STOP`** ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)):
-    `MEDICATION//STOP//<drug>//<route>` is now `MEDICATION//END//<drug>//<route>`, the spelling the MEDS ETLs
-    agree on for the two ends of an interval, `<FAMILY>//START//…` and `<FAMILY>//END//…`. The start code, the events and the code
+    `MEDICATION//STOP//<drug>//<route>` is now `MEDICATION//END//<drug>//<route>`, the spelling all MEDS ETLs
+    move to for the two ends of an interval, `<FAMILY>//START//…` and `<FAMILY>//END//…`. The start code, the events and the code
     metadata are otherwise unchanged. The end code keeps the route, which says which order it is; only the start
     ends in the dose unit, the unit of its value. To pair a start with its end, drop the start's last part and swap
     `START` for `END`.
