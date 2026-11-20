@@ -148,7 +148,7 @@ def test_numeric_codes_carry_their_recorded_unit(codes):
     assert units["LAB//900003//UNK"] is None
     # Codes without a numeric value carry no unit.
     assert units["GENDER//F"] is None
-    assert units["MEDICATION//STOP//Synthetic drug A//PO"] is None
+    assert units["MEDICATION//END//Synthetic drug A//PO"] is None
     # Labels still come from the item dictionaries next to the `_self` unit block.
     descriptions = dict(codes.select("code", "description").iter_rows())
     assert descriptions["LAB//900001//mg/dL"] == "Synthetic lab A"

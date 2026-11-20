@@ -96,7 +96,7 @@ Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DIAGNOSIS//ICD//…`                                                                                                                                               | NWICU's `d_icd_diagnoses`, joined on `icd_version` and `icd_code`                        | `long_title`; ICD-9-CM / ICD-10-CM parent with the dot restored                                                                                                                                                                                                                                                                                     |
 | `LAB//…` (from `labevents` and `chartevents`), `PROCEDURE//…`                                                                                                     | NWICU's `d_labitems` / `d_items`, joined on `itemid` alone, so a label covers every unit | `label`; no vocabulary parent (LOINC links come from suMEDS, below)                                                                                                                                                                                                                                                                                 |
-| `MEDICATION//START//…`, `MEDICATION//STOP//…`                                                                                                                     | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and stop codes)                                                                                                                                                                                                              |
+| `MEDICATION//START//…`, `MEDICATION//END//…`                                                                                                                      | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and end codes)                                                                                                                                                                                                               |
 | `MEDICATION//…` (eMAR), `HOSPITAL_ADMISSION`, `HOSPITAL_DISCHARGE`, `INSURANCE`, `LANGUAGE`, `MARITAL_STATUS`, `RACE`, `GENDER`, `ICU_ADMISSION`, `ICU_DISCHARGE` | `_self` template over the code's components                                              | the column each component comes from, with its meaning from the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/modules/) (source: [MIT-LCP/mimic-website](https://github.com/MIT-LCP/mimic-website), MIT, 8182227), whose structure NWICU retains ([NWICU 0.1.0 project page](https://physionet.org/content/nwicu-northwestern-icu/0.1.0/)) |
 | `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text, via a constant code column (below)                                         | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
 
@@ -281,6 +281,23 @@ commit reproduces the baseline exactly, so any finding is a change in the output
 credentialed release, so the [Summary stats workflow](.github/workflows/summary-stats.yaml) only warns
 when a pull request changes `src/` (the config or the suMEDS rules) without regenerating the baseline. A
 MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it with `--compare`.
+
+## Breaking changes
+
+### Unreleased (after 1.1.0)
+
+- **Prescription end codes use `END`, not `STOP`** ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)):
+    `MEDICATION//STOP//<drug>//<route>` is now `MEDICATION//END//<drug>//<route>`, the spelling the MEDS ETLs
+    agree on for the two ends of an interval, `<FAMILY>//START//…` and `<FAMILY>//END//…`. The start code, the events and the code
+    metadata are otherwise unchanged. The end code keeps the route, which says which order it is; only the start
+    ends in the dose unit, the unit of its value. To pair a start with its end, drop the start's last part and swap
+    `START` for `END`.
+
+    | Old                                 | New                                |
+    | ----------------------------------- | ---------------------------------- |
+    | `MEDICATION//STOP//<drug>//<route>` | `MEDICATION//END//<drug>//<route>` |
+
+    To migrate, rewrite old codes with the regex `^MEDICATION//STOP//` → `MEDICATION//END//`.
 
 ## Citation
 
