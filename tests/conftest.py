@@ -80,13 +80,15 @@ subject_id,hadm_id,emar_id,emar_seq,charttime,medication,event_txt
 2,201,2-1,1,2160-03-01 12:00:00,Synthetic drug B,Not Given
 """
 
-# 900001 and 900002 are in the synthetic crosswalk, 900003 is not.
+# 900001 and 900002 are in the synthetic crosswalk, 900003 is not. Some units are padded with
+# whitespace or blank: a code's unit is stripped (` mg/dL ` is `LAB//900001//mg/dL`), and a blank
+# one is `UNK`, as a missing one.
 LABEVENTS = """\
 subject_id,hadm_id,itemid,charttime,value,valuenum,valueuom,priority
 1,101,900001,2150-01-02 06:00:00,1.1,1.1,mg/dL,ROUTINE
 1,101,900002,2150-01-02 06:00:00,140,140,mEq/L,ROUTINE
-2,201,900001,2160-03-01 10:00:00,2.4,2.4,mg/dL,STAT
-3,301,900003,2170-06-02 06:00:00,Negative,,,
+2,201,900001,2160-03-01 10:00:00,2.4,2.4," mg/dL ",STAT
+3,301,900003,2170-06-02 06:00:00,Negative,,"  ",
 4,401,900001,2180-09-11 06:00:00,0.9,0.9,mg/dL,ROUTINE
 4,401,900001,2180-09-11 07:00:00,0.05,0.05,mmol/L,ROUTINE
 """
@@ -101,7 +103,7 @@ itemid,label
 PRESCRIPTIONS = """\
 subject_id,hadm_id,pharmacy_id,starttime,stoptime,drug,ndc,dose_val_rx,dose_unit_rx,route
 1,101,11,2150-01-02 09:00:00,2150-01-04 09:00:00,Synthetic drug A,12345-6789-01,10,mg,PO
-3,301,31,2170-06-01 16:00:00,2170-06-02 16:00:00,Synthetic drug C,,5,mL,IV
+3,301,31,2170-06-01 16:00:00,2170-06-02 16:00:00,Synthetic drug C,,5," mL",IV
 4,401,41,2180-09-11 09:00:00,2180-09-12 09:00:00,Synthetic drug A,12345-6789-01,500,mcg,PO
 """
 
@@ -116,7 +118,7 @@ subject_id,hadm_id,stay_id,first_careunit,last_careunit,intime,outtime
 CHARTEVENTS = """\
 subject_id,hadm_id,stay_id,charttime,itemid,value,valuenum,valueuom
 1,101,1001,2150-01-01 12:00:00,800001,88,88,bpm
-2,201,2001,2160-03-01 10:00:00,800001,120,120,bpm
+2,201,2001,2160-03-01 10:00:00,800001,120,120,"bpm "
 4,401,4001,2180-09-10 09:00:00,800001,72,72,bpm
 """
 

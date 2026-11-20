@@ -146,6 +146,11 @@ def test_numeric_codes_carry_their_recorded_unit(codes):
     for code, unit in expected.items():
         assert (units[code], recorded[code]) == unit, code
     assert units["LAB//900003//UNK"] is None
+    # The fixture pads some units with whitespace and leaves one blank: each code's unit is
+    # stripped, a blank one is `UNK`, and no code ends in whitespace or in an empty segment.
+    assert [
+        code for code in units if code != code.rstrip() or code.endswith("//")
+    ] == []
     # Codes without a numeric value carry no unit.
     assert units["GENDER//F"] is None
     assert units["MEDICATION//STOP//Synthetic drug A//PO"] is None

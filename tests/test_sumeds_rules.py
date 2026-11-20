@@ -118,7 +118,7 @@ def test_gender_rule(raw_cfg, rules):
 def test_lab_loinc_crosswalk_key_is_the_itemid(raw_cfg, rules, table, event, unit):
     rule = _rule(rules, "nwicu-lab-loinc")
     template = raw_cfg[table][event]["code"]
-    code = _render(template, itemid="123456", valueuom=unit)
+    code = _render(template, itemid="123456", _value_unit=unit)
     assert code == f"LAB//123456//{unit}"
     assert rule.key(code) == "123456"
     assert rule.key(_render(template)) is None  # LAB//UNK//UNK
