@@ -123,7 +123,8 @@ def test_lab_loinc_crosswalk_key_is_the_itemid(raw_cfg, rules, table, event, uni
     code = _render(template, itemid="123456", _value_unit=unit)
     assert code == f"LAB//123456//{unit}"
     assert rule.key(code) == "123456"
-    assert rule.key(_render(template)) is None  # LAB//UNK//UNK
+    # `_value_unit` is the derived column, which is `UNK` for a missing unit.
+    assert rule.key(_render(template, _value_unit="UNK")) is None  # LAB//UNK//UNK
 
 
 def test_lab_loinc_crosswalk_skips_other_families(raw_cfg, rules):
