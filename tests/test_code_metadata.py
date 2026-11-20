@@ -169,9 +169,9 @@ def test_unit_siblings_get_their_stem_as_parent_and_row(codes):
 
     drug = "MEDICATION//START//Synthetic drug A//PO"
     for code in (f"{drug}//mg", f"{drug}//mcg"):
-        assert rows[code]["parent_codes"] == ["NDC/12345678901", drug], code
+        assert rows[code]["parent_codes"] == ["NDC//12345678901", drug], code
     assert rows[drug]["unit"] is None
-    assert rows[drug]["parent_codes"] == ["NDC/12345678901"]
+    assert rows[drug]["parent_codes"] == ["NDC//12345678901"]
     assert rows[drug]["description"] == (
         "Prescription start: Synthetic drug A; route: PO; dose unit: (NWICU prescriptions.drug, "
         "route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
