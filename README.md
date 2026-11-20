@@ -78,6 +78,26 @@ this config. A null code component drops the row under MEDS-Extract (since 0.7),
 demographic produces no event at all rather than minting a `RACE//UNK` code that would read as
 an observed category.
 
+### Deaths
+
+Each subject gets at most one `MEDS_DEATH`, timed by the first of these that exists:
+
+1. the earliest `admissions.deathtime` of the subject (in-hospital death; `patients` joins it with
+    `cols: {deathtime: min}`);
+2. `patients.dod`, the date of death;
+3. for a subject with neither, the `dischtime` of an admission discharged to a location starting
+    `EXPIRED` (`death_untimed` in `admissions`).
+
+The first two are the MIMIC-IV rule. The third exists because NWICU 0.1.0 has 108 subjects whose
+in-hospital death is recorded only as the discharge location. `hospital_expire_flag` is not used: in
+NWICU it is set only on rows without a `deathtime`, and it misses `EXPIRED - HOSPICE`. A discharge to
+`EXPIRED` is not counted again when the admission has a `deathtime` or the subject has a `dod`.
+
+`admissions` cannot see the `deathtime` of the subject's *other* admissions (MESSY rejects a table
+joining itself), so a subject without a `dod`, with a `deathtime` on one admission and an untimed
+`EXPIRED` discharge on another, would still get two deaths. On NWICU 0.1.0 no subject does: the full
+build that added `death_untimed` had 5,213 subjects with a death and none with two.
+
 ### Raw data layout
 
 The PhysioNet release nests its tables one level down, under `data/nw_hosp/` and
@@ -284,7 +304,7 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
 
 ## Breaking changes
 
-### Unreleased (after 1.1.0)
+### Unreleased
 
 - **Prescription end codes use `END`, not `STOP`** ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)):
     `MEDICATION//STOP//<drug>//<route>` is now `MEDICATION//END//<drug>//<route>`, the spelling all MEDS ETLs
@@ -298,6 +318,13 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
     | `MEDICATION//STOP//<drug>//<route>` | `MEDICATION//END//<drug>//<route>` |
 
     To migrate, rewrite old codes with the regex `^MEDICATION//STOP//` → `MEDICATION//END//`.
+
+- A subject with a `patients.dod` but no `admissions.deathtime` no longer gets a second
+    `MEDS_DEATH` at the `dischtime` of an admission discharged to `EXPIRED…`; their one death is at
+    the `dod`. Before, `death_untimed` checked only the admission's `deathtime`. The full NWICU 0.1.0
+    build had no such subject when `death_untimed` was added, so the release output should not
+    change; a synthetic build had 1 of 40. To migrate, nothing is needed; to reproduce the old
+    output, add a `MEDS_DEATH` at `dischtime` for those admissions.
 
 ## Citation
 
