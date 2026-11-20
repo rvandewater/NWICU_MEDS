@@ -133,7 +133,12 @@ data/nw_hosp/diagnoses_icd:
     joins:
       data/nw_hosp/admissions: { key: hadm_id, cols: [dischtime] }
   diagnosis:
-    code: 'f"DIAGNOSIS//ICD//{$icd_version ?? ''UNK''}//{$icd_code ?? ''UNK''}"'
+    # The vocabulary and its edition are separate components, `ICD//9CM` and `ICD//10CM`: NWICU's
+    # diagnoses are the US billing editions ICD-9-CM and ICD-10-CM (the `ICD{version}CM` parents
+    # below). Any other version is kept as recorded, and a missing one is `UNK`.
+    code: >-
+      f"DIAGNOSIS//ICD//{'9CM' if $icd_version::str == '9' else '10CM' if $icd_version::str == '10'
+      else ($icd_version ?? 'UNK')}//{$icd_code ?? 'UNK'}"
     hadm_id: $hadm_id
     time: $dischtime::?"%Y-%m-%d %H:%M:%S"
     _metadata:

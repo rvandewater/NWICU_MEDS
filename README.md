@@ -114,7 +114,7 @@ Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 
 | Code family                                                                                                                                                       | Route                                                                                    | Source                                                                                                                                                                                                                                                                                                                                              |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DIAGNOSIS//ICD//…`                                                                                                                                               | NWICU's `d_icd_diagnoses`, joined on `icd_version` and `icd_code`                        | `long_title`; ICD-9-CM / ICD-10-CM parent with the dot restored                                                                                                                                                                                                                                                                                     |
+| `DIAGNOSIS//ICD//{9CM,10CM}//…`                                                                                                                                   | NWICU's `d_icd_diagnoses`, joined on `icd_version` and `icd_code`                        | `long_title`; ICD-9-CM / ICD-10-CM parent with the dot restored                                                                                                                                                                                                                                                                                     |
 | `LAB//…` (from `labevents` and `chartevents`), `PROCEDURE//…`                                                                                                     | NWICU's `d_labitems` / `d_items`, joined on `itemid` alone, so a label covers every unit | `label`; no vocabulary parent (LOINC links come from suMEDS, below)                                                                                                                                                                                                                                                                                 |
 | `MEDICATION//START//…`, `MEDICATION//STOP//…`                                                                                                                     | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and stop codes)                                                                                                                                                                                                              |
 | `MEDICATION//…` (eMAR), `HOSPITAL_ADMISSION`, `HOSPITAL_DISCHARGE`, `INSURANCE`, `LANGUAGE`, `MARITAL_STATUS`, `RACE`, `GENDER`, `ICU_ADMISSION`, `ICU_DISCHARGE` | `_self` template over the code's components                                              | the column each component comes from, with its meaning from the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/modules/) (source: [MIT-LCP/mimic-website](https://github.com/MIT-LCP/mimic-website), MIT, 8182227), whose structure NWICU retains ([NWICU 0.1.0 project page](https://physionet.org/content/nwicu-northwestern-icu/0.1.0/)) |
@@ -253,14 +253,14 @@ The rules add:
 - **ICD diagnoses** (`nwicu-icd10cm-diagnoses`, `nwicu-icd9cm-diagnoses`, ontology rules): the
     dotted ICD-10-CM / ICD-9-CM code is validated against the pack and gives `vocabulary_id`,
     `concept_code` and every ancestor in the pack. The ETL's own parent stays first and suMEDS does
-    not add it again, and the ancestors follow it (`DIAGNOSIS//ICD//10//I5023` gets
+    not add it again, and the ancestors follow it (`DIAGNOSIS//ICD//10CM//I5023` gets
     `ICD10CM//I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
 - **Gender** (`nwicu-gender`, an ontology rule): `GENDER//F` and `GENDER//M` get the OMOP Gender
     codes `Gender//F` and `Gender//M` (a tag: Gender has no public pack; with `--athena-csv`
     suMEDS validates them against Athena).
 - **Parents among NWICU codes** (`nwicu-icd-parents-in-dataset`, a hierarchy rule): a diagnosis
     code of the table becomes the parent of another when its ICD code is the nearest ancestor
-    present (`DIAGNOSIS//ICD//10//I5023` gets `DIAGNOSIS//ICD//10//I502` when both occur).
+    present (`DIAGNOSIS//ICD//10CM//I5023` gets `DIAGNOSIS//ICD//10CM//I502` when both occur).
 
 Every parent that a pack (or Athena) knows is named in `parent_names`, a map from the parent
 code to its name (`map<string, string>` in parquet; suMEDS 0.6 replaced the earlier list aligned
@@ -311,6 +311,15 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
     `NDC//12345678901`, the spelling suMEDS already writes for the parents it adds. Codes and events
     are unchanged. To migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS
     and alignEHR already read both spellings as the same parent.
+
+- **ICD codes name the vocabulary and its edition apart, `ICD//<edition>//<code>`.** Diagnoses
+    `DIAGNOSIS//ICD//9//<code>` and `DIAGNOSIS//ICD//10//<code>` are now `DIAGNOSIS//ICD//9CM//<code>`
+    and `DIAGNOSIS//ICD//10CM//<code>`: NWICU's `icd_version` 9 and 10 are the US billing editions
+    ICD-9-CM and ICD-10-CM, as the ETL's `ICD9CM`/`ICD10CM` parents already said. Every MEDS ETL of
+    this family now uses this layout (`ICD//10PCS`, `ICD//10GM`, `ICD//10CN`, ...). The code after
+    the edition is unchanged (undotted, as NWICU records it), and so are its parents. A missing
+    version is still `UNK`. To migrate, rename codes with the regex
+    `^DIAGNOSIS//ICD//(9|10)//` → `DIAGNOSIS//ICD//\1CM//`.
 
 - A subject with a `patients.dod` but no `admissions.deathtime` no longer gets a second
     `MEDS_DEATH` at the `dischtime` of an admission discharged to `EXPIRED…`; their one death is at
