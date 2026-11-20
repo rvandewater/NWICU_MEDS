@@ -246,17 +246,21 @@ def test_lab_and_chart_items_get_loinc_from_the_crosswalk(enriched_rows: dict):
         row = enriched_rows[code]
         assert row["vocabulary_id"] == "LOINC", code
         assert row["concept_code"] == loinc, code
-        # 900001 also has a mmol/L code, so its in-dataset unit-sibling parent comes first (the
-        # post-stage that adds it runs before suMEDS); suMEDS keeps it and names only LOINC.
-        sibling = ["LAB//900001"] if code.startswith("LAB//900001//") else []
-        assert row["parent_codes"] == [*sibling, f"LOINC//{loinc}"], code
-        assert _names(row) == {f"LOINC//{loinc}": title("LOINC", loinc)}, code
+        # Its in-dataset unit-free stem comes first (the post-stage that adds it runs before
+        # suMEDS; with `link_single_units` also for 800001, which has one unit); suMEDS keeps it.
+        stem = code.rsplit("//", 1)[0]
+        assert row["parent_codes"] == [stem, f"LOINC//{loinc}"], code
+        assert _names(row)[f"LOINC//{loinc}"] == title("LOINC", loinc), code
     # The dictionary label from the ETL is kept.
     assert enriched_rows["LAB//900001//mg/dL"]["description"] == "Synthetic lab A"
 
     # A crosswalk LOINC code that is not in the pack, and an item without a crosswalk row.
     for code in ("LAB//900002//mEq/L", "LAB//900003//UNK"):
-        assert not enriched_rows[code]["parent_codes"], code
+        assert not [
+            p
+            for p in enriched_rows[code]["parent_codes"] or []
+            if p.startswith("LOINC")
+        ], code
         assert enriched_rows[code]["vocabulary_id"] is None, code
 
 

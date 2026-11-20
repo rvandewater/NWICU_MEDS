@@ -179,9 +179,13 @@ def test_unit_siblings_get_their_stem_as_parent_and_row(codes):
         "Prescription start: Synthetic drug A; route: PO; dose unit: (NWICU prescriptions.drug, "
         "route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
     )
-    # A unit-suffixed code without a sibling gets neither.
-    assert "LAB//900002" not in rows
-    assert not rows["LAB//900002//mEq/L"]["parent_codes"]
+    # A unit-suffixed code without a sibling gets its stem too (`link_single_units`), and a
+    # prescription start without a dose unit as well (`unknown_unit_prefixes`); a lab code without a
+    # unit does not, as `UNK` there is no unit to strip.
+    assert rows["LAB//900002//mEq/L"]["parent_codes"] == ["LAB//900002"]
+    assert rows["LAB//900002"]["unit"] is None
+    assert not rows["LAB//900003//UNK"]["parent_codes"]
+    assert "LAB//900003" not in rows
 
 
 def test_constant_codes_are_plain_literals(raw_cfg: dict):
