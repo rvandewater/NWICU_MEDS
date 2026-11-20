@@ -118,7 +118,7 @@ Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 | `LAB//…` (from `labevents` and `chartevents`), `PROCEDURE//…`                                                                                                     | NWICU's `d_labitems` / `d_items`, joined on `itemid` alone, so a label covers every unit | `label`; no vocabulary parent (LOINC links come from suMEDS, below)                                                                                                                                                                                                                                                                                 |
 | `MEDICATION//START//…`, `MEDICATION//STOP//…`                                                                                                                     | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and stop codes)                                                                                                                                                                                                              |
 | `MEDICATION//…` (eMAR), `HOSPITAL_ADMISSION`, `HOSPITAL_DISCHARGE`, `INSURANCE`, `LANGUAGE`, `MARITAL_STATUS`, `RACE`, `GENDER`, `ICU_ADMISSION`, `ICU_DISCHARGE` | `_self` template over the code's components                                              | the column each component comes from, with its meaning from the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/modules/) (source: [MIT-LCP/mimic-website](https://github.com/MIT-LCP/mimic-website), MIT, 8182227), whose structure NWICU retains ([NWICU 0.1.0 project page](https://physionet.org/content/nwicu-northwestern-icu/0.1.0/)) |
-| `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text, via a constant code column (below)                                         | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
+| `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text on the literal code (below)                                                 | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
 
 **Units.** Every code that carries a `numeric_value` also gets a `unit` column: a string, the unit
 of the code's numeric values, one per code, written in [UCUM](https://ucum.org/) by suMEDS's
@@ -151,12 +151,10 @@ of silently matching zero rows.
 writes none. LOINC links for 45 lab and 5 chart itemids exist as an inferred crosswalk, which
 suMEDS applies after extraction (see [Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds)).
 
-**Literal codes.** MEDS-Extract attaches metadata only through a code's components, so a code
-written as a bare literal (`code: MEDS_BIRTH`) can never be described: the pre-existing
-`codes.parquet` it documents for that case is not read by `meds-extract-run`. These four events
-therefore read their code from a constant `_table.cols` column (`_code_birth: '"MEDS_BIRTH"'`,
-`code: $_code_birth`), which gives the code one component for a `_self` description to attach to.
-The emitted codes and events are unchanged; their `code_template` names the constant column.
+**Literal codes.** `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH` and `MEDS_DEATH` are plain literals
+(`code: MEDS_BIRTH`) with a `_self` description: MEDS-Extract 0.8.1 and later attach `_self`
+metadata to literal codes ([MEDS_extract#166](https://github.com/mmcdermott/MEDS_extract/issues/166)),
+and their `code_template` is the code itself.
 `MEDS_DEATH` is described once, by the `patients` event: `death_untimed` carries no `_metadata`,
 because one code may have only one code template.
 
