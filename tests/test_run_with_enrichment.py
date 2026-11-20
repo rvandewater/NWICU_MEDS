@@ -266,27 +266,27 @@ def test_icd_diagnoses_get_pack_ancestors_and_dataset_parents(enriched_rows: dic
         row["description"] == "Synthetic diagnosis title I5023"
     )  # from d_icd_diagnoses
     assert (row["vocabulary_id"], row["concept_code"]) == ("ICD10CM", "I50.23")
-    # The ETL's own parent comes first and keeps its spelling; then the pack ancestors, then the
+    # The ETL's own parent comes first and is not repeated; then the pack ancestors, then the
     # nearest ancestor that is itself a diagnosis code of this dataset.
     assert row["parent_codes"] == [
-        "ICD10CM/I50.23",
+        "ICD10CM//I50.23",
         "ICD10CM//I50.2",
         "ICD10CM//I50",
         "DIAGNOSIS//ICD//10//I502",
     ]
     assert _names(row) == {
-        "ICD10CM/I50.23": title("ICD10CM", "I50.23"),
+        "ICD10CM//I50.23": title("ICD10CM", "I50.23"),
         "ICD10CM//I50.2": title("ICD10CM", "I50.2"),
         "ICD10CM//I50": title("ICD10CM", "I50"),
     }
 
     row = enriched_rows["DIAGNOSIS//ICD//9//E8889"]
     assert (row["vocabulary_id"], row["concept_code"]) == ("ICD9CM", "E888.9")
-    assert row["parent_codes"] == ["ICD9CM/E888.9", "ICD9CM//E888"]
+    assert row["parent_codes"] == ["ICD9CM//E888.9", "ICD9CM//E888"]
 
     # A code that is not in the pack keeps only the ETL's parent.
     row = enriched_rows["DIAGNOSIS//ICD//10//R4689"]
-    assert row["parent_codes"] == ["ICD10CM/R46.89"]
+    assert row["parent_codes"] == ["ICD10CM//R46.89"]
     assert row["vocabulary_id"] is None
 
 
@@ -303,7 +303,7 @@ def test_codes_without_a_rule_are_left_alone(enriched_rows: dict):
     # NDC has no pack, so the ETL's NDC parent is neither validated nor extended.
     row = enriched_rows["MEDICATION//START//Synthetic drug A//PO//mg"]
     assert row["parent_codes"] == [
-        "NDC/12345678901",
+        "NDC//12345678901",
         "MEDICATION//START//Synthetic drug A//PO",
     ]
     assert row["vocabulary_id"] is None

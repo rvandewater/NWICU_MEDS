@@ -108,7 +108,7 @@ what `meds-extract-download` writes, not at `data/` itself.
 ### Code metadata: descriptions, parent codes and units
 
 Every code in `metadata/codes.parquet` gets a `description`, and codes for which NWICU itself
-records a standard-vocabulary code get `parent_codes` (`ICD9CM/…`, `ICD10CM/…`, `NDC/…`, named
+records a standard-vocabulary code get `parent_codes` (`ICD9CM//…`, `ICD10CM//…`, `NDC//…`, named
 after the OMOP `vocabulary_id`) so vocabulary tooling such as OHDSI Athena can resolve them.
 Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 
@@ -118,7 +118,7 @@ Each family gets its metadata through a `_metadata` block in `messy.yaml`:
 | `LAB//…` (from `labevents` and `chartevents`), `PROCEDURE//…`                                                                                                     | NWICU's `d_labitems` / `d_items`, joined on `itemid` alone, so a label covers every unit | `label`; no vocabulary parent (LOINC links come from suMEDS, below)                                                                                                                                                                                                                                                                                 |
 | `MEDICATION//START//…`, `MEDICATION//END//…`                                                                                                                      | `_self` template over the code's components                                              | `prescriptions.drug`, `route`, `dose_unit_rx`; NDC parent from `prescriptions.ndc` normalized to 11 digits (both start and end codes)                                                                                                                                                                                                               |
 | `MEDICATION//…` (eMAR), `HOSPITAL_ADMISSION`, `HOSPITAL_DISCHARGE`, `INSURANCE`, `LANGUAGE`, `MARITAL_STATUS`, `RACE`, `GENDER`, `ICU_ADMISSION`, `ICU_DISCHARGE` | `_self` template over the code's components                                              | the column each component comes from, with its meaning from the [MIMIC-IV documentation](https://mimic.mit.edu/docs/iv/modules/) (source: [MIT-LCP/mimic-website](https://github.com/MIT-LCP/mimic-website), MIT, 8182227), whose structure NWICU retains ([NWICU 0.1.0 project page](https://physionet.org/content/nwicu-northwestern-icu/0.1.0/)) |
-| `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text, via a constant code column (below)                                         | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
+| `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH`, `MEDS_DEATH`                                                                                                           | `_self` text on the literal code (below)                                                 | the same documentation and this config's own time rules                                                                                                                                                                                                                                                                                             |
 
 **Units.** Every code that carries a `numeric_value` also gets a `unit` column: a string, the unit
 of the code's numeric values, one per code, written in [UCUM](https://ucum.org/) by suMEDS's
@@ -151,12 +151,10 @@ of silently matching zero rows.
 writes none. LOINC links for 45 lab and 5 chart itemids exist as an inferred crosswalk, which
 suMEDS applies after extraction (see [Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds)).
 
-**Literal codes.** MEDS-Extract attaches metadata only through a code's components, so a code
-written as a bare literal (`code: MEDS_BIRTH`) can never be described: the pre-existing
-`codes.parquet` it documents for that case is not read by `meds-extract-run`. These four events
-therefore read their code from a constant `_table.cols` column (`_code_birth: '"MEDS_BIRTH"'`,
-`code: $_code_birth`), which gives the code one component for a `_self` description to attach to.
-The emitted codes and events are unchanged; their `code_template` names the constant column.
+**Literal codes.** `ED_REGISTRATION`, `ED_OUT`, `MEDS_BIRTH` and `MEDS_DEATH` are plain literals
+(`code: MEDS_BIRTH`) with a `_self` description: MEDS-Extract 0.8.1 and later attach `_self`
+metadata to literal codes ([MEDS_extract#166](https://github.com/mmcdermott/MEDS_extract/issues/166)),
+and their `code_template` is the code itself.
 `MEDS_DEATH` is described once, by the `patients` event: `death_untimed` carries no `_metadata`,
 because one code may have only one code template.
 
@@ -252,9 +250,9 @@ The rules add:
     specimen and method; the table records both ends of every bridge.
 - **ICD diagnoses** (`nwicu-icd10cm-diagnoses`, `nwicu-icd9cm-diagnoses`, ontology rules): the
     dotted ICD-10-CM / ICD-9-CM code is validated against the pack and gives `vocabulary_id`,
-    `concept_code` and every ancestor in the pack. The ETL's own parent stays first, since suMEDS
-    counts `ICD10CM/I50.23` and `ICD10CM//I50.23` as the same entry, and the ancestors follow it
-    (`DIAGNOSIS//ICD//10//I5023` gets `ICD10CM/I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
+    `concept_code` and every ancestor in the pack. The ETL's own parent stays first and suMEDS does
+    not add it again, and the ancestors follow it (`DIAGNOSIS//ICD//10//I5023` gets
+    `ICD10CM//I50.23`, `ICD10CM//I50.2`, `ICD10CM//I50`).
 - **Gender** (`nwicu-gender`, an ontology rule): `GENDER//F` and `GENDER//M` get the OMOP Gender
     codes `Gender//F` and `Gender//M` (a tag: Gender has no public pack; with `--athena-csv`
     suMEDS validates them against Athena).
@@ -270,7 +268,7 @@ in their own rows.
 The ETL alone no longer emits the LOINC parents of lab and chart codes (earlier builds wrote
 `LOINC/<code>` for the same 50 itemids), and it never emitted ICD ancestors, Gender codes or
 parents among NWICU codes; suMEDS supplies them. suMEDS never removes or rewrites the ETL's own
-parents (`ICD10CM/…`, `NDC/…`) or descriptions: it only fills empty fields and appends parents.
+parents (`ICD10CM//…`, `NDC//…`) or descriptions: it only fills empty fields and appends parents.
 
 ## Summary statistics
 
@@ -305,6 +303,12 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
 ## Breaking changes
 
 ### Unreleased
+
+- **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
+    (`ICD9CM`, `ICD10CM`, `NDC`) used one slash, `NDC/12345678901`; they now use two,
+    `NDC//12345678901`, the spelling suMEDS already writes for the parents it adds. Codes and events
+    are unchanged. To migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS
+    and alignEHR already read both spellings as the same parent.
 
 - **Prescription end codes use `END`, not `STOP`** ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)):
     `MEDICATION//STOP//<drug>//<route>` is now `MEDICATION//END//<drug>//<route>`, the spelling all MEDS ETLs
