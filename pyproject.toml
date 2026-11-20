@@ -29,11 +29,13 @@ classifiers = [
 # string per code (and fails on a code with more than one unit). suMEDS 0.6.2 registers the `sumeds_enrich` stage the spec declares,
 # which enriches the code metadata with the rules registered below, soft-fails (a site without
 # internet still gets its ETL) and records in `metadata/dataset.json` whether the build was
-# enriched; it also provides `suMEDS-enrich` for an existing build. It is capped below the next
+# enriched; it also provides `suMEDS-enrich` for an existing build. 0.6.6 registers the
+# `sumeds_link_unit_siblings` post-stage, which links codes that differ only in their unit (it
+# replaced this package's own `nwicu_unit_metadata`). It is capped below the next
 # minor for the same reason (its rules format and CLI are still 0.x).
 dependencies = [
   "MEDS-extract[download]>=0.9.0,<0.10",
-  "sumeds>=0.6.5,<0.7",
+  "sumeds>=0.6.6,<0.7",
 ]
 
 [project.optional-dependencies]
@@ -55,11 +57,6 @@ NWICU = "NWICU_MEDS:messy.yaml"
 
 # Registers the suMEDS rules under the same name, so the spec's `sumeds_enrich` stage and
 # `--rules NWICU` find them.
-# The post-stage that links codes in codes.parquet that differ only in their unit, so the spec
-# can declare it in `etl.post_stages`.
-[project.entry-points."MEDS_transforms.stages"]
-nwicu_unit_metadata = "NWICU_MEDS.unit_metadata:main"
-
 [project.entry-points."sumeds.rules"]
 NWICU = "NWICU_MEDS:sumeds_rules.yaml"
 

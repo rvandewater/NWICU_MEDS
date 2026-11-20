@@ -112,12 +112,16 @@ has one unit and the codes are unchanged (`LAB//{itemid}//mEq/L` keeps its name)
 has a numeric value, so it is not used; `d_labitems` has no unit column.
 
 MEDS-Extract (since 0.9.0) writes `unit` as one string per code and fails if any code has more
-than one unit. The first post-stage, `nwicu_unit_metadata` (`src/NWICU_MEDS/unit_metadata.py`,
-before suMEDS), gives codes that differ only in their unit (`LAB//{itemid}//mg/dL` and
-`…//mmol/L`) the code without the unit (`LAB//{itemid}`) as an in-dataset parent in
-`parent_codes`, and adds a row for that code: no unit, the description its siblings share (for prescription starts, whose descriptions differ only
-by the dose unit, that description without it) and the vocabulary parents they all have. On NWICU
-0.1.0 that is 477 groups (142 lab items, 335 drug/route pairs; 1,135 codes) and 477 added rows.
+than one unit. The first post-stage, suMEDS's
+[`sumeds_link_unit_siblings`](https://github.com/rvandewater/suMEDS/blob/main/docs/unit_siblings.md)
+(default options; it replaced this package's own `nwicu_unit_metadata` in suMEDS 0.6.6), gives codes
+that differ only in their unit (`LAB//{itemid}//mg/dL` and `…//mmol/L`) the code without the unit
+(`LAB//{itemid}`) as an in-dataset parent in `parent_codes`, and adds a row for that code: no unit,
+the description its siblings share (for prescription starts, whose descriptions differ only by the
+dose unit, that description without it) and the vocabulary parents they all have. A code of the same
+item whose unit was not recorded (`LAB//{itemid}//UNK`) joins the siblings, but two `UNK`-style codes
+alone are never a group. On NWICU 0.1.0, before `UNK` codes were linked, that was 477 groups (142 lab
+items, 335 drug/route pairs; 1,135 codes) and 477 added rows.
 
 The item dictionaries replace a Python rebuild that existed because the MIMIC-IV crosswalks are
 keyed on MIMIC itemids that never match NWICU's, a mismatch that now surfaces as a WARNING instead
@@ -147,13 +151,13 @@ record, and parents among NWICU's own codes, are added afterwards by
 [suMEDS](https://github.com/rvandewater/SumMEDS). The package ships the rules for it,
 [`src/NWICU_MEDS/sumeds_rules.yaml`](src/NWICU_MEDS/sumeds_rules.yaml), registered in suMEDS's
 `sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `NWICU`, so
-`--rules NWICU` works for any suMEDS command. The spec runs them as its last stage, after
-`nwicu_unit_metadata` and suMEDS's `sumeds_normalize_units` (see **Units** above):
+`--rules NWICU` works for any suMEDS command. The spec runs them as its last stage, after suMEDS's
+`sumeds_link_unit_siblings` and `sumeds_normalize_units` (see **Units** above):
 
 ```yaml
 etl:
   post_stages:
-    - nwicu_unit_metadata
+    - sumeds_link_unit_siblings
     - sumeds_normalize_units
     - sumeds_enrich: {rules: NWICU}
 ```

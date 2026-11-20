@@ -15,7 +15,6 @@ import yaml
 from meds import CodeMetadataSchema
 
 from NWICU_MEDS import MESSY_CFG
-from NWICU_MEDS.unit_metadata import unit_sibling_stems, unit_stem_rows
 
 # The dictionary blocks of the two events that emit `LAB//{itemid}//{unit}` codes.
 LAB_BLOCKS = {
@@ -81,9 +80,10 @@ def test_built_codes_metadata():
     """A finished extraction is valid MEDS code metadata with every code described.
 
     The one exception is by design: the row of a unit-sibling stem has no description when its
-    siblings share none (:func:`NWICU_MEDS.unit_metadata.unit_stem_rows`). That does not happen in
-    the real release, but MESSY-synth gives one item id several labels, so the synthetic build has
-    such stems. Each undescribed code must be one of them, recomputed from its siblings.
+    siblings share none, even without their unit (suMEDS's `sumeds_link_unit_siblings`). That does
+    not happen in the real release, but MESSY-synth gives one item id several labels, so the
+    synthetic build has such stems. Each undescribed code must be one of them: a code that another
+    code, itself followed by `//<unit>`, lists as its parent.
 
     Failure messages report counts only, never codes, so this is safe to run on a credentialed build.
     """
@@ -95,18 +95,13 @@ def test_built_codes_metadata():
     undescribed = {
         c for c, d in zip(df["code"], df["description"], strict=True) if not d
     }
-    stems_without_description = set()
-    if undescribed and "unit" in df:
-        codes = pl.from_arrow(
-            table.select(["code", "description", "parent_codes", "unit"])
-        )
-        stems = unit_sibling_stems(codes["code"], codes["unit"]).drop_nulls().unique()
-        siblings = codes.filter(~pl.col("code").is_in(stems.implode()))
-        stems_without_description = {
-            row["code"]
-            for row in unit_stem_rows(siblings)
-            if row["description"] is None
-        }
+    stems = {
+        parent
+        for code, parents in zip(df["code"], df["parent_codes"], strict=True)
+        for parent in parents or ()
+        if code.startswith(f"{parent}//") and "//" not in code[len(parent) + 2 :]
+    }
+    stems_without_description = undescribed & stems
     n_undescribed = len(undescribed - stems_without_description)
     assert n_undescribed == 0, (
         f"{n_undescribed} of {len(df['code'])} codes have no description "

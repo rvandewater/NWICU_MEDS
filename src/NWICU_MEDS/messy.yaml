@@ -21,11 +21,13 @@ etl:
   # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
   # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
   #
-  # Before it, `nwicu_unit_metadata` (src/NWICU_MEDS/unit_metadata.py) gives codes that differ
-  # only in their unit the code without the unit as parent, and adds a row for that parent code. It runs first so that the enrichment, also a later `suMEDS-enrich`, sees
-  # the finished code list.
+  # Before it, suMEDS's `sumeds_link_unit_siblings` (suMEDS's docs/unit_siblings.md, default
+  # options) gives codes that differ only in their unit the code without the unit as parent, and
+  # adds a row for that parent code; a code whose unit was not recorded (`…//UNK`) joins its item's
+  # siblings. It runs first, before unit normalisation, so that the enrichment, also a later
+  # `suMEDS-enrich`, sees the finished code list.
   post_stages:
-    - nwicu_unit_metadata
+    - sumeds_link_unit_siblings
     # One UCUM spelling for every `unit` (suMEDS's shared table, e.g. `Cel`, `mm[Hg]`, `mg/dL`); the
     # spelling as recorded stays in `unit_source_value`, and an unknown spelling is kept as it is.
     - sumeds_normalize_units
