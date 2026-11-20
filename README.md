@@ -50,6 +50,15 @@ PhysioNet page (`description_uri`), and lists `hadm_id`, `icustay_id`, `emar_id`
 `pharmacy_id`, the keys back to the raw tables, under `raw_source_id_columns`; MEDS-Extract lists
 every other extension column under `other_extension_columns`.
 
+Intermediate stage outputs are deleted after a successful run, by default: the spec sets
+MEDS-Extract's `etl.cleanup_intermediates: true`, so a finished `$OUTPUT_DIR` holds only `data/`,
+`metadata/`, `.logs/` and `.meds_extract_run/`. A failed run keeps them, so the same command resumes
+where it stopped, and the same command on a finished output still does nothing. To keep them (to look
+at a stage's output or at its own logs in `$OUTPUT_DIR/<stage>/.logs/`), add
+`"overrides=['cleanup_intermediates=false']"`. Cleanup never deletes raw data: a download into the
+default `$OUTPUT_DIR/.meds_extract_run/raw_input` stays, and `download_dest_dir=` elsewhere lets other
+output directories reuse it.
+
 ## Configuration
 
 **This package contains no ETL code.** The entire pipeline is one file,
@@ -281,6 +290,17 @@ commit reproduces the baseline exactly, so any finding is a change in the output
 credentialed release, so the [Summary stats workflow](.github/workflows/summary-stats.yaml) only warns
 when a pull request changes `src/` (the config or the suMEDS rules) without regenerating the baseline. A
 MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it with `--compare`.
+
+## Breaking changes
+
+### Unreleased
+
+- **Intermediate stage outputs are no longer kept.** Up to 1.1.0, a run left each stage's output in
+    `<output_dir>/<stage>/` (`convert_to_parquet/`, `convert_to_MEDS_events/`, `sumeds_enrich/`, …). The spec now sets MEDS-Extract's
+    `etl.cleanup_intermediates: true`, so a successful run deletes those directories and keeps only
+    `data/`, `metadata/`, `.logs/` and `.meds_extract_run/`. The MEDS data and metadata are
+    unchanged. To migrate, add `"overrides=['cleanup_intermediates=false']"` to `meds-extract-run`
+    wherever you read a stage directory after the run.
 
 ## Citation
 
