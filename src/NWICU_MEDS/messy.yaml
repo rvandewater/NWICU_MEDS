@@ -38,6 +38,9 @@ _defaults:
 
 data/nw_hosp/admissions:
   _table:
+    # The subject's date of death, for the `death_untimed` guard below.
+    joins:
+      data/nw_hosp/patients: { key: subject_id, cols: [dod] }
     cols:
       # Constant code columns. MEDS-Extract attaches metadata only through a code's
       # components, so a bare literal `code: ED_REGISTRATION` can never be described; reading
@@ -114,11 +117,14 @@ data/nw_hosp/admissions:
         description: >-
           f"Hospital discharge; disposition after discharge: {$discharge_location ?? 'UNK'} (NWICU
           admissions.discharge_location)"
-  # Deaths that `patients.deathtime` never received a time for. The `deathtime`-absence guard is
-  # load-bearing: without it this double-counts the 3,343 subjects who already have a timed
-  # death. See "Deaths" in the README.
+  # Deaths recorded only as a discharge to EXPIRED…: no `admissions.deathtime` and no
+  # `patients.dod`. Both guards are load-bearing: the `patients` death event already covers a
+  # subject with either, and without the `deathtime` guard this double-counts the 3,343 subjects
+  # who already have a timed death. See "Deaths" in the README.
   death_untimed:
-    code: '"MEDS_DEATH" if (/^EXPIRED/ in $discharge_location) and (($deathtime ?? "__NULL__") == "__NULL__")'
+    code: >-
+      "MEDS_DEATH" if (/^EXPIRED/ in $discharge_location) and (($deathtime ?? "__NULL__") ==
+      "__NULL__") and (($dod ?? "__NULL__") == "__NULL__")
     time: $dischtime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
 
@@ -211,8 +217,8 @@ data/nw_hosp/patients:
       _self:
         description: >-
           "Death (MEDS death code). Time: the subject's earliest NWICU admissions.deathtime, else
-          patients.dod; for a discharge to a location starting EXPIRED without a deathtime, the
-          admissions.dischtime"
+          patients.dod; for a subject with neither, the admissions.dischtime of a discharge to a
+          location starting EXPIRED"
 
 data/nw_hosp/prescriptions:
   _table:
