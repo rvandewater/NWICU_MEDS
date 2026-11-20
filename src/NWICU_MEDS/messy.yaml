@@ -20,7 +20,17 @@ etl:
   # After the canonical stages, suMEDS adds titles and parent codes to `metadata/codes.parquet` and
   # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
   # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
+  #
+  # Before it, suMEDS's `sumeds_link_unit_siblings` (suMEDS's docs/unit_siblings.md, default
+  # options) gives codes that differ only in their unit the code without the unit as parent, and
+  # adds a row for that parent code; a code whose unit was not recorded (`…//UNK`) joins its item's
+  # siblings. It runs first, before unit normalisation, so that the enrichment, also a later
+  # `suMEDS-enrich`, sees the finished code list.
   post_stages:
+    - sumeds_link_unit_siblings
+    # One UCUM spelling for every `unit` (suMEDS's shared table, e.g. `Cel`, `mm[Hg]`, `mg/dL`); the
+    # spelling as recorded stays in `unit_source_value`, and an unknown spelling is kept as it is.
+    - sumeds_normalize_units
     - sumeds_enrich: { rules: NWICU }
 
 _defaults:
@@ -157,6 +167,10 @@ data/nw_hosp/labevents:
       data/nw_hosp/d_labitems:
         itemid: $itemid
         description: $label
+      # The unit of numeric_value, as recorded. It is also the code's last segment, so it is
+      # one value per code; a null valueuom (code `//UNK`) leaves the unit null.
+      _self:
+        unit: $valueuom
 
 data/nw_hosp/patients:
   _table:
@@ -219,6 +233,8 @@ data/nw_hosp/prescriptions:
         description: >-
           f"Prescription start: {$drug}; route: {$route ?? 'UNK'}; dose unit: {$dose_unit_rx ?? 'UNK'}
           (NWICU prescriptions.drug, route, dose_unit_rx; numeric_value is prescriptions.dose_val_rx)"
+        # The unit of numeric_value (dose_val_rx), as recorded; also the code's last segment.
+        unit: $dose_unit_rx
         parent_codes: 'f"NDC/{$_ndc_real}" if $_ndc_real == $_ndc_real'
   prescription_stop:
     code: f"MEDICATION//STOP//{$drug}//{$route ?? 'UNK'}"
@@ -266,6 +282,9 @@ data/nw_icu/chartevents:
       data/nw_icu/d_items:
         itemid: $itemid
         description: $label
+      # As in labevents: the recorded valueuom, also the code's last segment.
+      _self:
+        unit: $valueuom
 
 data/nw_icu/procedureevents:
   start:

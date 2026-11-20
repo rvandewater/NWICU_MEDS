@@ -1,6 +1,6 @@
 # Contributing
 
-This repository is a **MEDS-Extract 0.8 ETL**. All of it is two declarative files: the MESSY
+This repository is a **MEDS-Extract 0.9 ETL**. All of it is two declarative files: the MESSY
 config and the suMEDS rules that enrich its code metadata, which the config runs as its last stage.
 There is no Python to change.
 
