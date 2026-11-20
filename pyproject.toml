@@ -67,3 +67,10 @@ Issues = "https://github.com/rvandewater/NWICU_MEDS/issues"
 [tool.setuptools.package-data]
 # Ship the MESSY config and the suMEDS rules with the code.
 NWICU_MEDS = ["messy.yaml", "sumeds_rules.yaml"]
+
+# suMEDS's `link_single_units` (rvandewater/suMEDS#29) and `unknown_unit_prefixes`
+# (rvandewater/suMEDS#30), which the `sumeds_link_unit_siblings` options in the spec use, are not
+# released yet, so suMEDS comes from #30's branch for now. Once they are released, drop this table
+# and raise the floor above to `sumeds>=<that release>`.
+[tool.uv.sources]
+sumeds = { git = "https://github.com/rvandewater/suMEDS", branch = "unknown-unit-prefixes" }

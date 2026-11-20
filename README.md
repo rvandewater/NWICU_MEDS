@@ -134,14 +134,18 @@ has a numeric value, so it is not used; `d_labitems` has no unit column.
 MEDS-Extract (since 0.9.0) writes `unit` as one string per code and fails if any code has more
 than one unit. The first post-stage, suMEDS's
 [`sumeds_link_unit_siblings`](https://github.com/rvandewater/suMEDS/blob/main/docs/unit_siblings.md)
-(default options; it replaced this package's own `nwicu_unit_metadata` in suMEDS 0.6.6), gives codes
+(it replaced this package's own `nwicu_unit_metadata` in suMEDS 0.6.6), gives codes
 that differ only in their unit (`LAB//{itemid}//mg/dL` and `…//mmol/L`) the code without the unit
 (`LAB//{itemid}`) as an in-dataset parent in `parent_codes`, and adds a row for that code: no unit,
 the description its siblings share (for prescription starts, whose descriptions differ only by the
 dose unit, that description without it) and the vocabulary parents they all have. A code of the same
 item whose unit was not recorded (`LAB//{itemid}//UNK`) joins the siblings, but two `UNK`-style codes
 alone are never a group. On NWICU 0.1.0, before `UNK` codes were linked, that was 477 groups (142 lab
-items, 335 drug/route pairs; 1,135 codes) and 477 added rows.
+items, 335 drug/route pairs; 1,135 codes) and 477 added rows. With `link_single_units: true` and
+`unknown_unit_prefixes: [MEDICATION//START//]`, a code ending in its unit gets its stem also when its
+item has a single unit, and so does a prescription start without a recorded dose unit
+(`MEDICATION//START//{drug}//{route}//UNK`), so every start pairs with its end
+(`…//{drug}//{route}`) by stem.
 
 The item dictionaries replace a Python rebuild that existed because the MIMIC-IV crosswalks are
 keyed on MIMIC itemids that never match NWICU's, a mismatch that now surfaces as a WARNING instead
@@ -177,7 +181,9 @@ record, and parents among NWICU's own codes, are added afterwards by
 ```yaml
 etl:
   post_stages:
-    - sumeds_link_unit_siblings
+    - sumeds_link_unit_siblings:
+        link_single_units: true
+        unknown_unit_prefixes: [MEDICATION//START//]
     - sumeds_normalize_units
     - sumeds_enrich: {rules: NWICU}
 ```
@@ -305,6 +311,15 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
 ## Breaking changes
 
 ### Unreleased
+
+- **`codes.parquet` gains unit-free stem rows and stem parents for single-unit codes**
+    ([#20](https://github.com/rvandewater/NWICU_MEDS/pull/20)). suMEDS's `sumeds_link_unit_siblings` now runs with `link_single_units: true`:
+    every code that ends in its unit gets the code without the unit (its stem) as its last
+    `parent_codes` entry, and the stem gets a row of its own (no unit, no events), also when the
+    item has a single unit (`LAB//{itemid}//{unit}` gets `LAB//{itemid}`, `MEDICATION//START//{drug}//{route}//{unit}` gets `MEDICATION//START//{drug}//{route}`). Before, only items recorded in two or more units did. A prescription start without a recorded dose unit (`MEDICATION//START//{drug}//{route}//UNK`) gets its stem too (`unknown_unit_prefixes`).
+    Events are unchanged. On a synthetic (MESSY-synth) build, 24 `MEDICATION//START` codes gain a stem parent (8 of them `…//UNK`) and 24 stem rows are added. To migrate, nothing is needed unless a tool expects every
+    `codes.parquet` row to have events: drop the stem rows (no `code_template`, no `unit`), or
+    ignore a parent that is the code without its last `//` component.
 
 - A subject with a `patients.dod` but no `admissions.deathtime` no longer gets a second
     `MEDS_DEATH` at the `dischtime` of an admission discharged to `EXPIRED…`; their one death is at
