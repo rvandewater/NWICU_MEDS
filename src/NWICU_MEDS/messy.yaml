@@ -239,8 +239,11 @@ data/nw_hosp/prescriptions:
         # The unit of numeric_value (dose_val_rx), as recorded; also the code's last segment.
         unit: $dose_unit_rx
         parent_codes: 'f"NDC//{$_ndc_real}" if $_ndc_real == $_ndc_real'
+  # An interval is two codes, `MEDICATION//START//...` and `MEDICATION//END//...` (alignEHR#53).
+  # Both carry the drug and the route, which say which order it is; only the start ends in the
+  # dose unit, the unit of its value. Drop that last part and swap START for END to pair them.
   prescription_stop:
-    code: f"MEDICATION//STOP//{$drug}//{$route ?? 'UNK'}"
+    code: f"MEDICATION//END//{$drug}//{$route ?? 'UNK'}"
     time: $stoptime::?"%Y-%m-%d %H:%M:%S"
     hadm_id: $hadm_id
     pharmacy_id: $pharmacy_id
