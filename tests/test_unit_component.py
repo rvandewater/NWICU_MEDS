@@ -16,3 +16,4 @@ class TestUnitComponents(UnitComponentContract):
         "data/nw_hosp/prescriptions/prescription_start",
         "data/nw_icu/chartevents/event",
     )
+    require_unit_in_code = True
