@@ -319,7 +319,9 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
 
 ## Breaking changes
 
-### Unreleased
+### 1.2.0 (2026-11-20)
+
+- Rebuilt on the full release; `tests/regression/full_summary_stats.json` regenerated.
 
 - **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
     (`ICD9CM`, `ICD10CM`, `NDC`) used one slash, `NDC/12345678901`; they now use two,

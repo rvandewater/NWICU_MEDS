@@ -6,7 +6,6 @@ authors:
   - family-names: "van de Water"
     given-names: "Robin Philippus"
     orcid: "https://orcid.org/0000-0002-2895-4872"
-date-released: "2025-02-19"
 url: "https://github.com/rvandewater/NWICU_MEDS"
 repository-code: "https://github.com/rvandewater/NWICU_MEDS"
 license: "MIT"
