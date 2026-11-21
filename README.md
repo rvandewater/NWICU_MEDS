@@ -323,6 +323,10 @@ MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it wit
 
 - Rebuilt on the full release; `tests/regression/full_summary_stats.json` regenerated.
 
+- **`codes.parquet` gains the columns `unit` and `unit_source_value`**: `unit` is the code's unit in UCUM
+    (one String per code, MEDS-Extract 0.9 and suMEDS `sumeds_normalize_units`), `unit_source_value` the
+    unit as recorded. Codes and events are unchanged; nothing needs migrating.
+
 - **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
     (`ICD9CM`, `ICD10CM`, `NDC`) used one slash, `NDC/12345678901`; they now use two,
     `NDC//12345678901`, the spelling suMEDS already writes for the parents it adds. Codes and events
